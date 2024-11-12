@@ -14,6 +14,18 @@ config/name="Divinization"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+RegisterService="*res://game/core/service/register_service.gd"
+
 [dotnet]
 
 project/assembly_name="Divinization"
+
+[file_customization]
+
+folder_colors={
+"res://assets/": "red",
+"res://game/": "blue",
+"res://scenes/": "teal"
+}

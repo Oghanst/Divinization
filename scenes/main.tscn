@@ -1,0 +1,27 @@
+[gd_scene load_steps=6 format=4 uid="uid://b7ojd0x7g0ps4"]
+
+[ext_resource type="Script" path="res://game/domain/registry/resource_registry.gd" id="1_jucu8"]
+[ext_resource type="PackedScene" uid="uid://hr4cvg10i2kv" path="res://scenes/map/grass_tile.tscn" id="2_1uyqa"]
+[ext_resource type="Script" path="res://game/core/infrastructure/map_manager.gd" id="3_gackn"]
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_jkl8e"]
+resource_name = "tiles"
+scenes/1/scene = ExtResource("2_1uyqa")
+
+[sub_resource type="TileSet" id="TileSet_jnn0r"]
+tile_size = Vector2i(48, 48)
+sources/0 = SubResource("TileSetScenesCollectionSource_jkl8e")
+
+[node name="Main" type="Node2D"]
+
+[node name="ResourceRegistry" type="Node" parent="."]
+script = ExtResource("1_jucu8")
+
+[node name="Map" type="TileMapLayer" parent="ResourceRegistry"]
+position = Vector2(16, 16)
+tile_map_data = PackedByteArray("AAABAAEAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAEAAAAAAAAAAQAAAAIAAAAAAAAAAQAAAAMAAAAAAAAAAQABAAAAAAAAAAAAAQABAAIAAAAAAAAAAQABAAMAAAAAAAAAAQACAAAAAAAAAAAAAQACAAEAAAAAAAAAAQACAAIAAAAAAAAAAQACAAMAAAAAAAAAAQADAAAAAAAAAAAAAQADAAEAAAAAAAAAAQADAAIAAAAAAAAAAQADAAMAAAAAAAAAAQAEAAAAAAAAAAAAAQAEAAEAAAAAAAAAAQAEAAIAAAAAAAAAAQAEAAMAAAAAAAAAAQAFAAAAAAAAAAAAAQAFAAEAAAAAAAAAAQAFAAIAAAAAAAAAAQAFAAMAAAAAAAAAAQAGAAAAAAAAAAAAAQAGAAEAAAAAAAAAAQAGAAIAAAAAAAAAAQAGAAMAAAAAAAAAAQA=")
+tile_set = SubResource("TileSet_jnn0r")
+
+[node name="MapManager" type="Node2D" parent="." node_paths=PackedStringArray("render_layer")]
+script = ExtResource("3_gackn")
+render_layer = NodePath("../ResourceRegistry/Map")
