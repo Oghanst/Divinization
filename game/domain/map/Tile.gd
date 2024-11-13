@@ -7,8 +7,9 @@ var resources: ResourceComponent
 
 var resource_registry: ResourceRegistry
 
+
 func _ready() -> void:
-	print(get_path())
+	# print(get_path())
 	resource_registry = RegisterService.get_registry("resource_registry")
 	resources = resource_registry.get_resource_component(tile_terrain)
 	if resources == null:

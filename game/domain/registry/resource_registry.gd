@@ -132,6 +132,43 @@ func register_default_resources() -> void:
 			},
 		},
 	})
+	register_basic_resource_component("plain", {
+		"food": {
+			"property": {
+				"stock": 200,
+				"capacity": 1000,
+				"regen_coef": 2.0,
+			},
+		},
+		"wood": {
+			"property": {
+				"stock": 200,
+				"capacity": 500,
+				"regen_coef": 0.5,
+			},
+		},
+		"stone": {
+			"property": {
+				"stock": 50,
+				"capacity": 100,
+				"regen_coef": 0.0,
+			},
+		},
+		"iron": {
+			"property": {
+				"stock": 50,
+				"capacity": 100,
+				"regen_coef": 0.0,
+			},
+		},
+		"gold": {
+			"property": {
+				"stock": 0,
+				"capacity": 100,
+				"regen_coef": 0.0,
+			},
+		},
+	})
 
 func get_resource_component(tile_terrain: String) -> ResourceComponent:
 	"""
@@ -150,4 +187,3 @@ func cleanup() -> void:
 	"""
 	registry.clear()
 	resource_metas.clear()
-
