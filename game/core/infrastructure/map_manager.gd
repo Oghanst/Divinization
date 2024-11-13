@@ -21,9 +21,22 @@ func _ready():
 func initialize_logic_from_render():
 	for pos in terrain_render_layer.get_used_cells():
 		var terrain_name = get_tile_resource_name(terrain_render_layer, pos)
-		print(terrain_name, pos)
+		# var size = terrain_render_layer.tile_set.tile_size
+		# print_debug(terrain_name, pos)
 		grid[pos] = Tile.new()
 		grid[pos].tile_terrain = terrain_name
+
+
+func _input(event: InputEvent) -> void:
+	# 处理鼠标点击事件
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			var pos = terrain_render_layer.local_to_map(to_local(get_global_mouse_position()))
+			if grid.has(pos):
+				print_debug(grid[pos].tile_terrain)
+				print_debug(grid[pos].resources.resources)
+			else:
+				print_debug("No tile found at: " + str(pos))
 
 func load_grid_to_scene():
 	for pos in grid.keys():

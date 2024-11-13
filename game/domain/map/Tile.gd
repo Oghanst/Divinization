@@ -16,7 +16,6 @@ func _ready() -> void:
 		print("Resource component not found: " + tile_terrain)
 		queue_free()
 		return
-	print(resources.resources)
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.

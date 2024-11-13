@@ -1,8 +1,6 @@
 extends Object
 class_name ResourceComponent
 
-# 作为资源的组件附着在地块上，仅包含数据名称和对应数据的数据值
-
 var resources: Dictionary = {}
 # resources 模版
 # {

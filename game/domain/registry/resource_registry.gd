@@ -68,6 +68,60 @@ func register_default_resource_metas() -> void:
 		"tags": ["currency"],
 	})
 
+	# elemental 应该交给另一个系统处理，这里要分离
+	resource_metas["ruby"] = Meta.new({
+		"property": {
+			"stock": 0,
+			"capacity": 0,
+			"regen_coef": 0.0,
+		},
+		"tags": ["magical"],
+	})
+
+	resource_metas["sapphire"] = Meta.new({
+		"property": {
+			"stock": 0,
+			"capacity": 0,
+			"regen_coef": 0.0,
+		},
+		"tags": ["magical"],
+	})
+
+	resource_metas["emerald"] = Meta.new({
+		"property": {
+			"stock": 0,
+			"capacity": 0,
+			"regen_coef": 0.0,
+		},
+		"tags": ["magical"],
+	})
+
+	resource_metas["topaz"] = Meta.new({
+		"property": {
+			"stock": 0,
+			"capacity": 0,
+			"regen_coef": 0.0,
+		},
+		"tags": ["magical"],
+	})
+
+	resource_metas["diamond"] = Meta.new({
+		"property": {
+			"stock": 0,
+			"capacity": 0,
+			"regen_coef": 0.0,
+		},
+		"tags": ["magical"],
+	})
+
+	resource_metas["onyx"] = Meta.new({
+		"property": {
+			"stock": 0,
+			"capacity": 0,
+			"regen_coef": 0.0,
+		},
+	})
+
 
 func register_basic_resource_component(tile_terrain:String, resource_config:Dictionary) -> void:
 	"""
@@ -162,6 +216,13 @@ func register_default_resources() -> void:
 			},
 		},
 		"gold": {
+			"property": {
+				"stock": 0,
+				"capacity": 100,
+				"regen_coef": 0.0,
+			},
+		},
+		"ruby": {
 			"property": {
 				"stock": 0,
 				"capacity": 100,
