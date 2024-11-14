@@ -76,10 +76,11 @@ func get_resources() -> Dictionary:
 	获取所有资源
 	"""
 	return resources
-	
-func get_property_value(property_name: String):
+
+func get_property(key: String) -> Variant:
 	"""
 	获取资源属性
 	"""
-	assert(resources.has(property_name), "Property not found: " + property_name)
-	return resources[property_name]
+	assert(resources.has(key), "Property not found: " + key)
+	return resources[key]
+

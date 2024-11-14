@@ -13,6 +13,8 @@ var population_registry: PopulationRegistry
 var population: PopulationComponent
 
 # 主权组件
+var sovereignty_registry: SovereigntyRegistry
+var sovereignty: SovereigntyComponent
 
 # 建筑组件
 
@@ -23,8 +25,12 @@ func _ready() -> void:
 	# print(get_path())
 	resource_registry = RegisterService.get_registry("resource_registry")
 	resources = resource_registry.get_component(tile_terrain)
+
 	population_registry = RegisterService.get_registry("population_registry")
 	population = population_registry.get_component(tile_terrain)
+
+	sovereignty_registry = RegisterService.get_registry("sovereignty_registry")
+	sovereignty = sovereignty_registry.get_component()
 	if resources == null:
 		print("Resource component not found: " + tile_terrain)
 		queue_free()

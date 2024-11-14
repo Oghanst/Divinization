@@ -21,6 +21,7 @@ func get_registry(registry_name:String) -> Registry:
 func _ready() -> void:
 	add_registry("resource_registry", ResourceRegistry.new())
 	add_registry("population_registry", PopulationRegistry.new())
+	add_registry("sovereignty_registry", SovereigntyRegistry.new())
 
 
 

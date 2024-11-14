@@ -9,16 +9,16 @@ var population_meta: Meta = Meta.new({
 })
 var registry:Dictionary = {}
 
-func register_basic_population_component(tile_terrain:String, population_config:Dictionary) -> void:
+func register_basic_population_component(key:String, population_config:Dictionary) -> void:
 	"""
-	根据地块类型注册资源, resource_config 需要和资源的 meta 结构一致
+	根据 key 注册人口组件, population_config 需要和人口的 meta 结构一致
 	"""
 	var config: Dictionary = population_meta.construct_config(population_config)
-	registry[tile_terrain] = PopulationComponent.new(config)
+	registry[key] = PopulationComponent.new(config)
 
 func register_default_population() -> void:
 	"""
-	注册默认资源
+	注册默认资源，这里暂时用terrain作为key
 	"""
 	register_basic_population_component("grass", {
 		"population": 20,
@@ -31,19 +31,16 @@ func register_default_population() -> void:
 		"food_consumption_coef": 1.5,
 	})
 
-func get_component(tile_terrain: String) -> PopulationComponent:
+func get_component(key: String) -> PopulationComponent:
 	"""
-	获取资源组件
+	获取人口组件
 	"""
-	return registry[tile_terrain]
+	return registry[key]
 
 func _init() -> void:
 	print("PopulationRegistry ready")
 	register_default_population()
 
 func cleanup() -> void:
-	"""
-	清理资源
-	"""
 	registry.clear()
 	population_meta.clear()
