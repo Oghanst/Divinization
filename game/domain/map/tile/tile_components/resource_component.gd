@@ -60,11 +60,8 @@ func collect_resource(resource_name: String, amount: int) -> int:
 	resource["property"]["stock"] = new_stock
 	return collected
 
-func s_shape_regenerate(stock: int, capacity: int, regen_coef: float) -> int:
-	var regen_amount = int( (1-(float)(stock)/(float)(capacity)) * regen_coef * capacity )
-	return regen_amount
 
-func regenerate_resource(resource_name: String, regenerate_func:Callable = s_shape_regenerate) -> void:
+func regenerate_resource(resource_name: String, regenerate_func:Callable = UtilFunctions.linear_regenerate) -> void:
 	assert(resources.has(resource_name), "Resource not found: " + resource_name)
 	var resource:Dictionary = resources[resource_name]
 	var stock:int = resource["property"]["stock"]
@@ -74,8 +71,15 @@ func regenerate_resource(resource_name: String, regenerate_func:Callable = s_sha
 	var new_stock:int = min(stock + regen_amount, capacity)
 	resource["property"]["stock"] = new_stock
 
-func get_all_resources() -> Dictionary:
+func get_resources() -> Dictionary:
 	"""
 	获取所有资源
 	"""
 	return resources
+	
+func get_property_value(property_name: String):
+	"""
+	获取资源属性
+	"""
+	assert(resources.has(property_name), "Property not found: " + property_name)
+	return resources[property_name]

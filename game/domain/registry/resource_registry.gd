@@ -12,16 +12,10 @@ func register_resource_meta(resource_name: String, resource_meta: Meta) -> void:
 	resource_metas[resource_name] = resource_meta
 
 
-func register_resource_metas_from_file(file_path: String) -> void:
-	"""
-	从文件注册资源
-	"""
-	pass
 
 func register_default_resource_metas() -> void:
 	"""
 	注册默认资源
-	TODO:后续改为从配置文件读取
 	"""
 	resource_metas["food"] = Meta.new({
 		"property": {
@@ -68,7 +62,6 @@ func register_default_resource_metas() -> void:
 		"tags": ["currency"],
 	})
 
-	# elemental 应该交给另一个系统处理，这里要分离
 	resource_metas["ruby"] = Meta.new({
 		"property": {
 			"stock": 0,
@@ -137,13 +130,6 @@ func register_basic_resource_component(tile_terrain:String, resource_config:Dict
 		var temp_config = meta.construct_config(resource_config[resource_name])
 		config[resource_name] = temp_config
 	registry[tile_terrain] = ResourceComponent.new(config)
-		
-
-func register_resources_from_file(file_path: String) -> void:
-	"""
-	从文件注册资源
-	"""
-	pass
 
 func register_default_resources() -> void:
 	"""
@@ -231,7 +217,7 @@ func register_default_resources() -> void:
 		},
 	})
 
-func get_resource_component(tile_terrain: String) -> ResourceComponent:
+func get_component(tile_terrain: String) -> ResourceComponent:
 	"""
 	获取资源组件
 	"""

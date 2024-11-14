@@ -16,6 +16,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+UtilFunctions="*res://utils/util_functions.gd"
 RegisterService="*res://game/core/service/register_service.gd"
 
 [dotnet]

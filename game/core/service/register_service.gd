@@ -1,6 +1,6 @@
 extends Node
 
-# Register service
+# Registery service
 var registries:Dictionary = {}
 
 func add_registry(registry_name:String, registry: Registry):
@@ -20,11 +20,9 @@ func get_registry(registry_name:String) -> Registry:
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	add_registry("resource_registry", ResourceRegistry.new())
+	add_registry("population_registry", PopulationRegistry.new())
 
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
 
 func _exit_tree() -> void:
 	cleanup_registries()

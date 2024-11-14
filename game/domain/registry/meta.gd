@@ -28,3 +28,9 @@ func _init(meta_dict: Dictionary) -> void:
 	初始化 meta
 	"""
 	meta = meta_dict
+
+func clear() -> void:
+	"""
+	清理 meta
+	"""
+	meta.clear()

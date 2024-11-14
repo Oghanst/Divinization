@@ -11,9 +11,44 @@ class_name MapManager
 
 
 var grid = {}  # 存储逻辑层数据，Key: Vector2, Value: Tile
+var highlighted_grids: Dictionary = {}  # 存储高亮的地块
+var highlighted_color: Color = Color(1, 1, 0, 0.5)  # 高亮颜色
+
+func highlight_grid(pos: Vector2) -> void:
+	"""
+	高亮地块
+	"""
+	if not highlighted_grids.has(pos):
+		var highlighted_rect = ColorRect.new()
+		highlighted_rect.color = highlighted_color
+		highlighted_rect.size = terrain_render_layer.tile_set.tile_size
+		highlighted_rect.position = terrain_render_layer.map_to_local(pos) - highlighted_rect.size / 2
+		add_child(highlighted_rect)
+		highlighted_rect.visible = true
+		highlighted_rect.z_index = 1
+		highlighted_grids[pos] = highlighted_rect
+		print_debug("highlighted grid at: " + str(pos))
+
+func unhighlight_grid(pos: Vector2) -> void:
+	"""
+	取消高亮地块
+	"""
+	if highlighted_grids.has(pos):
+		highlighted_grids[pos].queue_free()
+		highlighted_grids.erase(pos)
+
+func highlight_action(pos: Vector2) -> void:
+	"""
+	高亮地块动作
+	"""
+	if highlighted_grids.has(pos):
+		unhighlight_grid(pos)
+	else:
+		highlight_grid(pos)
 
 func _ready():
 	assert(terrain_render_layer != null, "Terrain render layer is not set.")
+	visible = true
 	initialize_logic_from_render()
 	load_grid_to_scene()
 	
@@ -34,7 +69,9 @@ func _input(event: InputEvent) -> void:
 			var pos = terrain_render_layer.local_to_map(to_local(get_global_mouse_position()))
 			if grid.has(pos):
 				print_debug(grid[pos].tile_terrain)
-				print_debug(grid[pos].resources.resources)
+				# print_debug(grid[pos].resources.resources)
+				print_debug(grid[pos].population.population)
+				highlight_action(pos)
 			else:
 				print_debug("No tile found at: " + str(pos))
 
@@ -56,4 +93,3 @@ func _exit_tree() -> void:
 	for pos in grid.keys():
 		grid[pos].queue_free()
 	grid.clear()
-
