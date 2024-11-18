@@ -9,10 +9,15 @@ enum CITY_SCALE {
 
 @export var city_name: String = ""
 @export var city_position: Vector2i = Vector2(0, 0)
-@export var city_scale: CITY_SCALE = CITY_SCALE.SMALL
 @export var city_sprite: Sprite2D
 
+var city_scale: CITY_SCALE = CITY_SCALE.SMALL
+var defence: int = 0
 var city_surrounding_tiles: Array[Vector2i] = []
+
+# ===================================
+# 简单的函数接口
+# ===================================
 
 func set_city_position(map_pos: Vector2i, local_pos: Vector2) -> void:
 	"""

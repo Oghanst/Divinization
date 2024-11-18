@@ -1,0 +1,30 @@
+[gd_scene load_steps=3 format=3 uid="uid://m5xuiw50vq1j"]
+
+[ext_resource type="Script" path="res://game/ui/ui_component/dynamic_box_container.gd" id="1_480g1"]
+
+[sub_resource type="Theme" id="Theme_wrjdv"]
+
+[node name="TestUi" type="Node2D"]
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+offset_left = 168.0
+offset_top = 104.0
+offset_right = 424.0
+offset_bottom = 456.0
+
+[node name="DynamicBoxContainer" type="BoxContainer" parent="PanelContainer"]
+layout_mode = 2
+vertical = true
+script = ExtResource("1_480g1")
+
+[node name="Label" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+theme = SubResource("Theme_wrjdv")
+
+[node name="Tree" type="Tree" parent="."]
+offset_left = 1024.0
+offset_top = 152.0
+offset_right = 1504.0
+offset_bottom = 480.0
+columns = 2

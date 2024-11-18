@@ -1,4 +1,4 @@
-extends Object
+extends TileComponent
 class_name ResourceComponent
 
 var resources: Dictionary = {}
@@ -41,11 +41,12 @@ var resources: Dictionary = {}
 # 	},
 # }
 
-func _init(config:Dictionary) -> void:
+func _init(config:Dictionary, in_component_name:String="resource") -> void:
 	"""
 	初始化资源组件
 	"""
 	resources = config
+	component_name = in_component_name
 	
 func collect_resource(resource_name: String, amount: int) -> int:
 	"""
@@ -84,3 +85,8 @@ func get_property(key: String) -> Variant:
 	assert(resources.has(key), "Property not found: " + key)
 	return resources[key]
 
+func duplicate() -> ResourceComponent:
+	"""
+	复制组件
+	"""
+	return ResourceComponent.new(resources, component_name)

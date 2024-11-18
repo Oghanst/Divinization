@@ -1,7 +1,7 @@
 extends Node2D
 class_name MapRenderLayer
 
-# 地图渲染层，负责渲染地图，父节点必须是map manager
+# 地图渲染层，负责渲染地图，父节点必须是 map manager
 
 # ===================================
 # 属性
@@ -111,7 +111,6 @@ func highlight_cell(pos: Vector2) -> void:
 		highlighted_rect.visible = true
 		highlighted_rect.z_index = 1 # 置于0层之上
 		highlighted_cells[pos] = highlighted_rect
-		print("highlighted grid at: " + str(pos))
 
 func unhighlight_cell(pos: Vector2) -> void:
 	"""

@@ -16,8 +16,14 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-RegisterService="*res://game/core/service/register_service.gd"
 UtilFunctions="*res://utils/util_functions.gd"
+RegisterService="*res://game/core/service/register_service.gd"
+SystemService="*res://game/core/service/system_service.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 
 [dotnet]
 
@@ -28,5 +34,9 @@ project/assembly_name="Divinization"
 folder_colors={
 "res://assets/": "red",
 "res://game/": "blue",
+"res://game/application/": "red",
+"res://game/core/": "yellow",
+"res://game/domain/": "blue",
+"res://game/ui/": "pink",
 "res://scenes/": "teal"
 }

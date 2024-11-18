@@ -1,4 +1,4 @@
-extends Object
+extends TileComponent
 class_name PopulationComponent
 
 var population: Dictionary = {}
@@ -13,11 +13,12 @@ var basic_productivity: int = 5
 const DEFAULT_PRODUCTIVITY_COEF: float = 1.0
 const DEFAULT_POPULATION_REGENERATE_COEF: float = 0.2
 
-func _init(config: Dictionary) -> void:
+func _init(config: Dictionary, in_component_name:String = "population") -> void:
 	"""
 	初始化人口组件
 	"""
 	population = config
+	component_name = in_component_name
 
 
 func add_property_value(property_name: String, value: int) -> void:
@@ -33,6 +34,12 @@ func get_property(key: String) -> Variant:
 	"""
 	assert(population.has(key), "Property not found: " + key)
 	return population[key]
+
+func get_population() -> Dictionary:
+	"""
+	获取人口
+	"""
+	return population
 
 func set_property(key: String, value: Variant) -> void:
 	"""
@@ -77,3 +84,9 @@ func consume_food() -> int:
 	var food_consumption_coef: float = get_property("food_consumption_coef")
 	var food_consumption: int = int(get_property("population") * food_consumption_coef)
 	return food_consumption
+
+func duplicate() -> PopulationComponent:
+	"""
+	复制组件
+	"""
+	return PopulationComponent.new(population, component_name)

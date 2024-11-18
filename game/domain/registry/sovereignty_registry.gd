@@ -32,9 +32,9 @@ func _init() -> void:
 
 func get_component(key: String = "") -> SovereigntyComponent:
 	"""
-	获取主权组件， key 为空则返回默认主权（无主权）组件
+	获取主权组件的实例， key 为空则返回默认主权（无主权）组件
 	"""
-	return registry[key]
+	return registry[key].duplicate()
 
 
 func cleanup() -> void:

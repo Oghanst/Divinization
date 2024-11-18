@@ -11,7 +11,7 @@ func cleanup_registries()->void:
 		if registry.has("cleanup"):
 			registry.cleanup()
 		else:
-			print("Warning: a registry must have cleanup method.")
+			print("WARNING: a registry must have cleanup method.")
 	registries.clear()
 
 func get_registry(registry_name:String) -> Registry:

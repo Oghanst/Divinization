@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://d3hh1demb64hb"]
+
+[node name="Multilabel" type="Node2D"]
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+offset_left = 120.0
+offset_top = 56.0
+offset_right = 248.0
+offset_bottom = 208.0
+horizontal_scroll_mode = 0
+
+[node name="VSplitContainer" type="GridContainer" parent="ScrollContainer"]
+layout_mode = 2
+columns = 2
+
+[node name="Label4" type="Label" parent="ScrollContainer/VSplitContainer"]
+layout_mode = 2
+text = "id: 36666"
+
+[node name="Label" type="Label" parent="ScrollContainer/VSplitContainer"]
+layout_mode = 2
+text = "1212123132"
+
+[node name="Label3" type="Label" parent="ScrollContainer/VSplitContainer"]
+layout_mode = 2
+text = "id: 36666"

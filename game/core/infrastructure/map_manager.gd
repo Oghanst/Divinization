@@ -11,17 +11,32 @@ class_name MapManager
 var grid = {}  # 存储逻辑层数据，Key: Vector2i, Value: Tile
 var cities = {}  # 存储城市数据，Key: Vector2i, Value: City
 
+# ===================================
+# 信号
+# ===================================
+
+signal show_tile_info(tile: Tile)
+
+# ===================================
+# 外部接受信号的函数
+# ===================================
+
 func on_tile_clicked(map_pos: Vector2i) -> void:
 	"""
 	地块点击事件
 	"""
 	if grid.has(map_pos):
-		map_render_layer.highlight_action(map_pos)
-		if map_render_layer.get_tile_resource_name(map_pos) == "grass":
-			map_render_layer.set_cell(map_pos, "plain")
+		emit_signal("show_tile_info", grid[map_pos].get_tile_info())
+		# map_render_layer.highlight_action(map_pos)
+		# if map_render_layer.get_tile_resource_name(map_pos) == "grass":
+		# 	map_render_layer.set_cell(map_pos, "plain")
 	else:
 		print_debug("No tile found at: " + str(map_pos))
 
+
+# ===================================
+# 基本函数
+# ===================================
 
 func set_city(pos: Vector2i, local_pos: Vector2, city: City) -> void:
 	"""
@@ -37,7 +52,6 @@ func set_city(pos: Vector2i, local_pos: Vector2, city: City) -> void:
 		# 获取周围地块
 		var new_surrounding_tiles = city.city_surrounding_tiles.duplicate()
 		for old_pos in city.city_surrounding_tiles:
-			# print("terrain  " ,terrain_render_layer.get_surrounding_cells(old_pos))
 			for new_pos in map_render_layer.get_cell_surrounding_cells(old_pos, map_render_layer.tile_terrain_layer):
 				if grid.has(new_pos):
 					if grid[new_pos].sovereignty.get_city() != "" and grid[new_pos].sovereignty.get_city() != city.city_name:
@@ -73,7 +87,7 @@ func test_city():
 	set_city(pos, map_render_layer.map_to_local(pos), city)
 	
 	city = cities[pos]
-	print(city.city_surrounding_tiles.size())
+	print_debug(city.city_surrounding_tiles.size())
 	for p in city.city_surrounding_tiles:
 		print_debug(p)
 		map_render_layer.highlight_cell(p)
@@ -91,11 +105,8 @@ func _ready():
 	
 # 从 TileMapLayer 初始化逻辑层
 func initialize_logic_from_render():
-	# print(map_render_layer.get_used_cells(map_render_layer.tile_terrain_layer))
 	for pos in map_render_layer.get_used_cells(map_render_layer.tile_terrain_layer):
 		var terrain_name = map_render_layer.get_tile_resource_name(pos)
-		# var size = terrain_render_layer.tile_set.tile_size
-		print(terrain_name, pos)
 		grid[pos] = Tile.new()
 		grid[pos].tile_terrain = terrain_name
 
@@ -107,7 +118,6 @@ func load_to_scene(dict: Dictionary) -> void:
 	"""
 	for pos in dict.keys():
 		var tile = dict[pos]
-		# tile.position = terrain_render_layer.map_to_world(pos)
 		add_child(tile)
 
 func clear_scene(dict: Dictionary) -> void:

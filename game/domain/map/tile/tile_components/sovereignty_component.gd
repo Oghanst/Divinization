@@ -1,14 +1,21 @@
-extends Object
+extends TileComponent
 class_name SovereigntyComponent
 
 
 var sovereignty: Dictionary = {}
 
-func _init(config: Dictionary) -> void:
+func get_sovereignty() -> Dictionary:
+	"""
+	获取主权信息
+	"""
+	return sovereignty
+
+func _init(config: Dictionary, in_component_name:String = "sovereignty") -> void:
 	"""
 	初始化主权组件
 	"""
 	sovereignty = config
+	component_name = in_component_name
 
 func set_property(key: String, value: Variant) -> void:
 	"""
@@ -46,3 +53,9 @@ func get_city() -> String:
 	获取城市归属
 	"""
 	return get_property("city")
+
+func duplicate() -> SovereigntyComponent:
+	"""
+	复制组件
+	"""
+	return SovereigntyComponent.new(sovereignty, component_name)

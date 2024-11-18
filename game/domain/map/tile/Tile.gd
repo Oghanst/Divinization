@@ -21,8 +21,16 @@ var sovereignty: SovereigntyComponent
 # 神权组件
 
 
+func get_tile_info() -> Dictionary:
+	var tile_info: Dictionary = {
+		"resource": resources.get_resources(),
+		"population": population.get_population(),
+		"sovereignty": sovereignty.get_sovereignty(),
+	}
+	return tile_info
+
 func _ready() -> void:
-	# print(get_path())
+	# 获取各个组件的实例，在生命周期中只获取一次
 	resource_registry = RegisterService.get_registry("resource_registry")
 	resources = resource_registry.get_component(tile_terrain)
 

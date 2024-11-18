@@ -33,9 +33,9 @@ func register_default_population() -> void:
 
 func get_component(key: String) -> PopulationComponent:
 	"""
-	获取人口组件
+	获取人口组件的实例
 	"""
-	return registry[key]
+	return registry[key].duplicate()
 
 func _init() -> void:
 	print("PopulationRegistry ready")

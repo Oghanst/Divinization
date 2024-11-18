@@ -219,9 +219,9 @@ func register_default_resources() -> void:
 
 func get_component(tile_terrain: String) -> ResourceComponent:
 	"""
-	获取资源组件
+	获取资源组件的实例
 	"""
-	return registry[tile_terrain]
+	return registry[tile_terrain].duplicate()
 
 func _init() -> void:
 	print("ResourceRegistry ready")
