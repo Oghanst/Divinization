@@ -23,3 +23,6 @@ func register_default_terrain_types() -> void:
 func _init() -> void:
 	register_default_terrain_types()
 	print("TerrainRegistry ready")
+
+func cleanup() -> void:
+	terrain_types.clear()

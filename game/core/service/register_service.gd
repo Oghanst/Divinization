@@ -7,11 +7,13 @@ func add_registry(registry_name:String, registry: Registry):
 	registries[registry_name] = registry
 
 func cleanup_registries()->void:
-	for registry in registries:
-		if registry.has("cleanup"):
+	for registry_name in registries:
+		var registry = registries[registry_name]
+		if registry.has_method("cleanup"):
 			registry.cleanup()
 		else:
 			print("WARNING: a registry must have cleanup method.")
+		registry.free()
 	registries.clear()
 
 func get_registry(registry_name:String) -> Registry:

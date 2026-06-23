@@ -1,0 +1,162 @@
+[
+  {
+    "id": "sick_village",
+    "name": "病村",
+    "description": "边境村庄正在被怪病吞噬。六回合后疫病会全面爆发，你必须在那之前决定如何利用或拯救这个地方。",
+    "final_event": "疫病爆发",
+    "turn_limit": 6,
+    "hand_size": 5,
+    "action_points": 3,
+    "initial_resources": {
+      "faith": 0,
+      "followers": 0,
+      "will": 3,
+      "materials": 0,
+      "exposure": 0,
+      "sanity": 5
+    },
+    "initial_progress": {
+      "cure_progress": 0,
+      "source_clues": 0,
+      "anchor_progress": 0,
+      "public_trust": 0,
+      "witness": 0,
+      "infection": 1,
+      "suspicion": 0,
+      "life_route": 0,
+      "secret_route": 0,
+      "death_route": 0
+    },
+    "starting_deck": [
+      "observe_symptoms",
+      "observe_symptoms",
+      "weak_heal",
+      "weak_heal",
+      "private_preach",
+      "private_preach",
+      "whisper_dream",
+      "search_old_well",
+      "search_old_well",
+      "hide_tracks",
+      "small_ritual",
+      "death_transfer",
+      "calm_villagers"
+    ],
+    "turn_events": [
+      {
+        "id": "patient_worsens",
+        "name": "病人恶化",
+        "text": "又有病人开始吐出黑色血块。",
+        "effects": [
+          {"kind": "progress", "key": "infection", "value": 1}
+        ]
+      },
+      {
+        "id": "suspicious_monk",
+        "name": "修士怀疑",
+        "text": "路过的修士注意到了村里的异常传闻。",
+        "effects": [
+          {"kind": "progress", "key": "suspicion", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": 1}
+        ]
+      },
+      {
+        "id": "villagers_panic",
+        "name": "村民恐慌",
+        "text": "恐慌在村民之间扩散，所有人都在寻找替罪羊。",
+        "effects": [
+          {"kind": "progress", "key": "suspicion", "value": 1},
+          {"kind": "resource", "key": "faith", "value": -1}
+        ]
+      },
+      {
+        "id": "old_well_whispers",
+        "name": "旧井低语",
+        "text": "夜里，旧井里传出不属于活人的低语。",
+        "effects": [
+          {"kind": "resource", "key": "materials", "value": 1},
+          {"kind": "progress", "key": "death_route", "value": 1},
+          {"kind": "add_card_to_discard", "card_id": "fever_dream"}
+        ]
+      },
+      {
+        "id": "grateful_family",
+        "name": "感激的家庭",
+        "text": "被救过的人愿意替你传一句话。",
+        "requirements": [
+          {"scope": "progress", "key": "cure_progress", "op": ">=", "value": 1}
+        ],
+        "effects": [
+          {"kind": "resource", "key": "followers", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 1}
+        ]
+      }
+    ],
+    "outcomes": [
+      {
+        "id": "cleanse_plague",
+        "name": "净化疫病",
+        "text": "你找到了病源并救下村庄。病村变成你最早的治愈传说。",
+        "requirements": [
+          {"scope": "progress", "key": "cure_progress", "op": ">=", "value": 3},
+          {"scope": "progress", "key": "source_clues", "op": ">=", "value": 2}
+        ],
+        "rewards": [
+          {"kind": "resource", "key": "faith", "value": 3},
+          {"kind": "progress", "key": "life_route", "value": 2}
+        ]
+      },
+      {
+        "id": "prayer_circle",
+        "name": "集体祈祷",
+        "text": "村民围成一圈呼唤你的神名，疫病被信仰暂时压下。",
+        "requirements": [
+          {"scope": "resource", "key": "followers", "op": ">=", "value": 2},
+          {"scope": "resource", "key": "faith", "op": ">=", "value": 4},
+          {"scope": "progress", "key": "public_trust", "op": ">=", "value": 1}
+        ],
+        "rewards": [
+          {"kind": "resource", "key": "faith", "value": 4},
+          {"kind": "progress", "key": "anchor_progress", "value": 1}
+        ]
+      },
+      {
+        "id": "death_authority",
+        "name": "死亡回响",
+        "text": "你没有治愈疫病，而是让死亡服从了你的秩序。",
+        "requirements": [
+          {"scope": "progress", "key": "death_route", "op": ">=", "value": 3},
+          {"scope": "resource", "key": "materials", "op": ">=", "value": 1}
+        ],
+        "rewards": [
+          {"kind": "resource", "key": "faith", "value": 2},
+          {"kind": "progress", "key": "anchor_progress", "value": 1},
+          {"kind": "progress", "key": "death_route", "value": 2}
+        ]
+      },
+      {
+        "id": "hidden_escape",
+        "name": "隐秘撤离",
+        "text": "你没有拯救村庄，但带走了病源线索，并没有暴露自己。",
+        "requirements": [
+          {"scope": "resource", "key": "exposure", "op": "<=", "value": 1},
+          {"scope": "progress", "key": "source_clues", "op": ">=", "value": 1}
+        ],
+        "rewards": [
+          {"kind": "resource", "key": "materials", "value": 1},
+          {"kind": "progress", "key": "secret_route", "value": 1}
+        ]
+      },
+      {
+        "id": "plague_failure",
+        "name": "疫病失控",
+        "text": "疫病吞没村庄。幸存者记住了你的失败，死亡阴影也记住了你的名字。",
+        "rewards": [
+          {"kind": "resource", "key": "exposure", "value": 2},
+          {"kind": "progress", "key": "infection", "value": 2},
+          {"kind": "add_card_to_discard", "card_id": "fever_dream"}
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,148 @@
+[
+  {
+    "id": "observe_symptoms",
+    "name": "观察病症",
+    "type": "行动",
+    "cost": 1,
+    "text": "检查病人的症状，寻找疫病来源。",
+    "effects": [
+      {"kind": "progress", "key": "source_clues", "value": 1},
+      {"kind": "progress", "key": "cure_progress", "value": 1},
+      {"kind": "log", "text": "你记下了病症的共同点，疫病源头逐渐清晰。"}
+    ]
+  },
+  {
+    "id": "weak_heal",
+    "name": "微弱治愈",
+    "type": "神迹",
+    "cost": 1,
+    "text": "消耗灵性缓解一名病人的痛苦，换来第一批见证。",
+    "requirements": [
+      {"scope": "resource", "key": "will", "op": ">=", "value": 1}
+    ],
+    "effects": [
+      {"kind": "resource", "key": "will", "value": -1},
+      {"kind": "resource", "key": "faith", "value": 1},
+      {"kind": "resource", "key": "exposure", "value": 1},
+      {"kind": "progress", "key": "cure_progress", "value": 1},
+      {"kind": "progress", "key": "life_route", "value": 1},
+      {"kind": "log", "text": "退烧的人开始低声谈论你的名字。"}
+    ]
+  },
+  {
+    "id": "private_preach",
+    "name": "私下传教",
+    "type": "行动",
+    "cost": 1,
+    "text": "避开外人，向一个绝望家庭讲述你的神名。",
+    "effects": [
+      {"kind": "resource", "key": "faith", "value": 1},
+      {"kind": "resource", "key": "followers", "value": 1},
+      {"kind": "resource", "key": "exposure", "value": 1},
+      {"kind": "log", "text": "一个家庭愿意在夜里为你点燃第一盏灯。"}
+    ]
+  },
+  {
+    "id": "whisper_dream",
+    "name": "低语入梦",
+    "type": "秘仪",
+    "cost": 1,
+    "text": "在梦里留下启示，影响一个关键人物。",
+    "requirements": [
+      {"scope": "resource", "key": "sanity", "op": ">=", "value": 1}
+    ],
+    "effects": [
+      {"kind": "resource", "key": "sanity", "value": -1},
+      {"kind": "resource", "key": "faith", "value": 1},
+      {"kind": "progress", "key": "witness", "value": 1},
+      {"kind": "progress", "key": "secret_route", "value": 1},
+      {"kind": "log", "text": "有人醒来后记得一个不属于人间的声音。"}
+    ]
+  },
+  {
+    "id": "search_old_well",
+    "name": "搜寻旧井",
+    "type": "探索",
+    "cost": 1,
+    "text": "调查村中旧井，寻找材料和病源线索。",
+    "effects": [
+      {"kind": "resource", "key": "materials", "value": 1},
+      {"kind": "progress", "key": "source_clues", "value": 1},
+      {"kind": "log", "text": "旧井石缝里残留着潮湿骨片和可疑黑泥。"}
+    ]
+  },
+  {
+    "id": "hide_tracks",
+    "name": "隐藏踪迹",
+    "type": "行动",
+    "cost": 1,
+    "text": "抹去异常痕迹，降低审判官和修士的注意。",
+    "effects": [
+      {"kind": "resource", "key": "exposure", "value": -2},
+      {"kind": "progress", "key": "suspicion", "value": -1},
+      {"kind": "log", "text": "你让所有奇迹看起来都像巧合。"}
+    ]
+  },
+  {
+    "id": "small_ritual",
+    "name": "小型仪式",
+    "type": "仪式",
+    "cost": 2,
+    "text": "以材料和信仰举行小仪式，制造锚点雏形。",
+    "requirements": [
+      {"scope": "resource", "key": "materials", "op": ">=", "value": 1},
+      {"scope": "resource", "key": "faith", "op": ">=", "value": 1}
+    ],
+    "effects": [
+      {"kind": "resource", "key": "materials", "value": -1},
+      {"kind": "resource", "key": "faith", "value": 2},
+      {"kind": "resource", "key": "exposure", "value": 1},
+      {"kind": "progress", "key": "anchor_progress", "value": 1},
+      {"kind": "log", "text": "村庄某处留下了无法解释的微弱圣痕。"}
+    ]
+  },
+  {
+    "id": "death_transfer",
+    "name": "转移疫病",
+    "type": "死亡",
+    "cost": 2,
+    "text": "将一部分疫病导入死物，换取死亡权柄的回响。",
+    "requirements": [
+      {"scope": "progress", "key": "source_clues", "op": ">=", "value": 1},
+      {"scope": "resource", "key": "materials", "op": ">=", "value": 1},
+      {"scope": "resource", "key": "sanity", "op": ">=", "value": 1}
+    ],
+    "effects": [
+      {"kind": "resource", "key": "materials", "value": -1},
+      {"kind": "resource", "key": "sanity", "value": -1},
+      {"kind": "progress", "key": "infection", "value": -1},
+      {"kind": "progress", "key": "death_route", "value": 2},
+      {"kind": "log", "text": "死者安静了，活人却开始害怕你的慈悲。"}
+    ]
+  },
+  {
+    "id": "calm_villagers",
+    "name": "安抚村民",
+    "type": "行动",
+    "cost": 1,
+    "text": "缓解恐慌，让村民愿意配合你的安排。",
+    "effects": [
+      {"kind": "resource", "key": "faith", "value": 1},
+      {"kind": "progress", "key": "public_trust", "value": 1},
+      {"kind": "progress", "key": "suspicion", "value": -1},
+      {"kind": "log", "text": "恐慌暂时退去，人们开始等待你的下一步。"}
+    ]
+  },
+  {
+    "id": "fever_dream",
+    "name": "热病噩梦",
+    "type": "污染",
+    "cost": 1,
+    "text": "打出以压下噩梦。若留在手中，回合结束时会拖慢你。",
+    "exhaust": true,
+    "effects": [
+      {"kind": "resource", "key": "sanity", "value": 1},
+      {"kind": "log", "text": "你从热病幻觉里夺回了一点清醒。"}
+    ]
+  }
+]
