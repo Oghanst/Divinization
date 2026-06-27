@@ -97,7 +97,7 @@ func _format_header(snapshot: Dictionary) -> String:
 		if not pending.get("exploited_effects", []).is_empty():
 			options.append("利用")
 		pending_line = "\n预兆：%s（%s）" % [str(pending.get("name", "")), " / ".join(options)]
-	return "第 %s 回合  行动点 %s/%s\n节点：%s\n信仰 %s  材料 %s  信徒 %s\n%s %s：%s%s" % [
+	return "第 %s 回合  行动点 %s/%s\n节点：%s\n信仰 %s  材料 %s  信徒 %s  据点 %s  使徒 %s\n%s %s：%s%s" % [
 		str(snapshot.get("turn", 1)),
 		str(snapshot.get("action_points", 0)),
 		str(snapshot.get("max_action_points", 0)),
@@ -105,6 +105,8 @@ func _format_header(snapshot: Dictionary) -> String:
 		str(resources.get("faith", 0)),
 		str(resources.get("materials", 0)),
 		str(resources.get("followers", 0)),
+		str(resources.get("cult_cells", 0)),
+		str(resources.get("apostles", 0)),
 		event_label,
 		str(snapshot.get("event_countdown", 0)),
 		str(snapshot.get("event_summary", "")),
@@ -114,7 +116,9 @@ func _format_header(snapshot: Dictionary) -> String:
 
 func _format_player(snapshot: Dictionary) -> String:
 	var routes: Dictionary = snapshot.get("route_affinity", {})
-	return "生命 %s/%s  等级 %s  经验 %s\n理智 %s  隐秘 %s  位置 %s\n倾向 生命%s 信仰%s 死亡%s 隐秘%s" % [
+	var threshold_mods: Dictionary = snapshot.get("route_bonus_threshold_mods", {})
+	var threshold_text := _format_route_threshold_mods(threshold_mods)
+	return "生命 %s/%s  等级 %s  经验 %s\n理智 %s  隐秘 %s  位置 %s\n倾向 生命%s 信仰%s 死亡%s 隐秘%s%s" % [
 		str(snapshot.get("life", 0)),
 		str(snapshot.get("max_life", 0)),
 		str(snapshot.get("level", 1)),
@@ -126,6 +130,7 @@ func _format_player(snapshot: Dictionary) -> String:
 		str(routes.get("faith", 0)),
 		str(routes.get("death", 0)),
 		str(routes.get("secret", 0)),
+		threshold_text,
 	]
 
 
@@ -157,18 +162,22 @@ func _format_crisis_preview(snapshot: Dictionary) -> String:
 			reward_lines.append("奖励已领取")
 		return "\n".join(reward_lines)
 	var previews: Array = snapshot.get("crisis_preview", [])
-	if previews.is_empty():
-		return ""
-	var lines: Array[String] = ["准备方向"]
-	for item in previews:
-		if typeof(item) != TYPE_DICTIONARY:
-			continue
-		var mark := "可用" if bool(item.get("ready", false)) else "准备"
-		lines.append("%s｜%s：%s" % [
-			mark,
-			str(item.get("name", "")),
-			str(item.get("status", "")),
-		])
+	var lines: Array[String] = []
+	if not previews.is_empty():
+		lines.append("准备方向")
+		for item in previews:
+			if typeof(item) != TYPE_DICTIONARY:
+				continue
+			var mark := "可用" if bool(item.get("ready", false)) else "准备"
+			lines.append("%s｜%s：%s" % [
+				mark,
+				str(item.get("name", "")),
+				str(item.get("status", "")),
+			])
+	var ascension: Dictionary = snapshot.get("ascension", {})
+	var ascension_text := _format_ascension(ascension)
+	if not ascension_text.is_empty():
+		lines.append(ascension_text)
 	return "\n".join(lines)
 
 
@@ -213,6 +222,61 @@ func _make_label(font_size: int, color: Color) -> Label:
 	label.add_theme_font_size_override("font_size", _scaled_int(font_size))
 	label.add_theme_color_override("font_color", color)
 	return label
+
+
+func _format_route_threshold_mods(mods: Dictionary) -> String:
+	var parts: Array[String] = []
+	for route_id in ["life", "faith", "death", "secret"]:
+		var value := int(mods.get(route_id, 0))
+		if value == 0:
+			continue
+		parts.append("%s%s" % [_route_short_name(route_id), _signed_int(value)])
+	return "" if parts.is_empty() else "\n加成阈值 " + "  ".join(parts)
+
+
+func _format_ascension(ascension: Dictionary) -> String:
+	if ascension.is_empty():
+		return ""
+	if bool(ascension.get("complete", false)):
+		var lines: Array[String] = ["章节目标", "已晋升｜第一次晋升：%s路线" % str(ascension.get("route_name", ""))]
+		var upgrade: Dictionary = ascension.get("power_upgrade", {})
+		if not upgrade.is_empty():
+			var mark := "已强化" if bool(upgrade.get("complete", false)) else ("可强化" if bool(upgrade.get("ready", false)) else "强化准备")
+			lines.append("%s｜%s" % [mark, str(upgrade.get("status", _format_power_upgrade_status(upgrade)))])
+		return "\n".join(lines)
+	var mark := "可举行" if bool(ascension.get("ready", false)) else "准备"
+	return "章节目标\n%s｜第一次晋升：%s" % [
+		mark,
+		str(ascension.get("status", "")),
+	]
+
+
+func _format_power_upgrade_status(upgrade: Dictionary) -> String:
+	if bool(upgrade.get("complete", false)):
+		return "权能牌：%s" % str(upgrade.get("to_card_name", ""))
+	return "%s -> %s" % [
+		str(upgrade.get("from_card_name", "")),
+		str(upgrade.get("to_card_name", "")),
+	]
+
+
+func _route_short_name(route_id: String) -> String:
+	match route_id:
+		"life":
+			return "生命"
+		"faith":
+			return "信仰"
+		"death":
+			return "死亡"
+		"secret":
+			return "隐秘"
+	return route_id
+
+
+func _signed_int(value: int) -> String:
+	if value > 0:
+		return "+%s" % str(value)
+	return str(value)
 
 
 func _make_panel_style() -> StyleBoxFlat:

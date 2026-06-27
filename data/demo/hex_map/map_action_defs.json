@@ -50,6 +50,26 @@
     "action_point_cost": 1
   },
   {
+    "id": "establish_cult_cell",
+    "name": "建教团据点",
+    "action_point_cost": 2
+  },
+  {
+    "id": "appoint_apostle",
+    "name": "任命使徒",
+    "action_point_cost": 1
+  },
+  {
+    "id": "dispatch_apostle",
+    "name": "派遣使徒",
+    "action_point_cost": 1
+  },
+  {
+    "id": "conceal_organization",
+    "name": "遮蔽教团",
+    "action_point_cost": 1
+  },
+  {
     "id": "enter_encounter",
     "name": "进入",
     "action_point_cost": 0

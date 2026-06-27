@@ -11,5 +11,21 @@
     "yield_bonus": {
       "faith": 1
     }
+  },
+  {
+    "id": "cult_cell",
+    "name": "教团据点",
+    "description": "第一次晋升后才能建立的组织据点。它把零散信徒编成小型教团，并提供稳定信仰。",
+    "material_cost": 1,
+    "faith_cost": 2,
+    "follower_cost": 2,
+    "action_point_cost": 2,
+    "terrain_blocklist": ["water"],
+    "max_per_tile": 1,
+    "core": true,
+    "yield_bonus": {
+      "faith": 2,
+      "production": 1
+    }
   }
 ]

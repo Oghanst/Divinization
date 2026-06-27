@@ -117,8 +117,13 @@
         "delta": 1
       },
       {
+        "scope": "route_bonus_threshold",
+        "route": "faith",
+        "delta": -1
+      },
+      {
         "scope": "log",
-        "text": "圣物碎片被嵌入临时锚点，微弱信仰开始聚拢。"
+        "text": "圣物碎片被嵌入临时锚点，微弱信仰开始聚拢，神庙回应也更容易成形。"
       }
     ]
   },
@@ -170,6 +175,34 @@
       {
         "scope": "log",
         "text": "你把零散异常整理成病源判断，隐秘路线也更清晰。"
+      }
+    ]
+  },
+  {
+    "id": "plague_residue",
+    "name": "疫病残材",
+    "description": "从失控疫病或死疫仪式中保留下来的残材，适合死亡路线晋升。",
+    "use_label": "调制死疫媒介",
+    "use_action_point_cost": 1,
+    "use_effects": [
+      {
+        "scope": "card_progress",
+        "key": "infection",
+        "delta": -1
+      },
+      {
+        "scope": "route_affinity",
+        "route": "death",
+        "delta": 1
+      },
+      {
+        "scope": "route_bonus_threshold",
+        "route": "death",
+        "delta": -1
+      },
+      {
+        "scope": "log",
+        "text": "你把疫病残材调成冷灰，死亡路线更容易回应。"
       }
     ]
   }

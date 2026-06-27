@@ -77,6 +77,63 @@ func _ready() -> void:
 	_assert(map.map_state.action_points == 1, "using item spends action point")
 	_assert(int(map.card_controller.progress.get("cure_progress", 0)) == cure_before_item + 1, "using herb advances cure progress")
 
+	map.card_controller.pending_event = _event_from_pool(map, "plague_outbreak", "patient_worsens")
+	var locked_life_preview: Dictionary = map._build_ui_snapshot()
+	_assert(_response_bonus_status_contains(locked_life_preview.get("pending_event_response_preview", []), "handled", "未解锁 生命倾向 0/2"), "life route bonus starts locked")
+	map.card_controller.hand = ["weak_heal"]
+	map.card_controller.resources["action_points"] = 3
+	map.card_controller.resources["will"] = 1
+	map.card_controller.play_card(0)
+	_assert(int(map.map_state.route_bonus_threshold_mods.get("life", 0)) == -1, "weak heal lowers life route bonus threshold")
+	_assert(int(map.map_state.route_affinity.get("life", 0)) == 1, "weak heal adds life route affinity")
+	map.card_controller.pending_event = _event_from_pool(map, "plague_outbreak", "patient_worsens")
+	var life_route_preview: Dictionary = map._build_ui_snapshot()
+	_assert(_response_bonus_status_contains(life_route_preview.get("pending_event_response_preview", []), "handled", "已解锁 生命倾向 1/1"), "weak heal unlocks life route bonus preview")
+	_assert(_response_bonus_status_contains(life_route_preview.get("pending_event_response_preview", []), "handled", "阈值 -1"), "life route bonus preview shows card threshold modifier")
+	var cure_before_life_bonus := int(map.card_controller.progress.get("cure_progress", 0))
+	map._on_map_action_requested("handle_pending_event")
+	_assert(int(map.card_controller.progress.get("cure_progress", 0)) == cure_before_life_bonus + 2, "life route bonus adds extra cure progress")
+	map.map_state.action_points = 2
+
+	map.card_controller.pending_event = _event_from_pool(map, "shrine_anchor_loss", "shrine_lamp_flickers")
+	var locked_faith_preview: Dictionary = map._build_ui_snapshot()
+	_assert(_inventory_summary_contains(locked_faith_preview.get("inventory", []), "relic_fragment", "信仰倾向加成阈值 -1"), "relic previews faith threshold modifier")
+	_assert(_response_bonus_status_contains(locked_faith_preview.get("pending_event_response_preview", []), "handled", "未解锁 信仰倾向 0/2"), "faith route bonus starts locked")
+	var anchor_before_relic := int(map.card_controller.progress.get("anchor_progress", 0))
+	map._on_map_action_requested("use_item:relic_fragment")
+	_assert(int(map.map_state.inventory.get("relic_fragment", 0)) == 0, "using relic consumes backpack item")
+	_assert(int(map.map_state.route_bonus_threshold_mods.get("faith", 0)) == -1, "relic lowers faith route bonus threshold")
+	_assert(int(map.map_state.route_affinity.get("faith", 0)) == 1, "relic adds faith route affinity")
+	map.map_state.action_points = 1
+	map.card_controller.pending_event = _event_from_pool(map, "shrine_anchor_loss", "shrine_lamp_flickers")
+	var faith_route_preview: Dictionary = map._build_ui_snapshot()
+	_assert(_response_bonus_status_contains(faith_route_preview.get("pending_event_response_preview", []), "handled", "已解锁 信仰倾向 1/1"), "relic unlocks faith route bonus preview")
+	_assert(_response_bonus_status_contains(faith_route_preview.get("pending_event_response_preview", []), "handled", "阈值 -1"), "route bonus preview shows threshold modifier")
+	map._on_map_action_requested("handle_pending_event")
+	_assert(int(map.card_controller.progress.get("anchor_progress", 0)) == anchor_before_relic + 3, "faith route bonus adds extra anchor progress")
+	var faith_threshold_before_card := int(map.map_state.route_bonus_threshold_mods.get("faith", 0))
+	map.card_controller.hand = ["small_ritual"]
+	map.card_controller.resources["action_points"] = 3
+	map.card_controller.resources["materials"] = 1
+	map.card_controller.resources["faith"] = 1
+	map.card_controller.play_card(0)
+	_assert(int(map.map_state.route_bonus_threshold_mods.get("faith", 0)) == faith_threshold_before_card - 1, "small ritual lowers faith route bonus threshold")
+	map.card_controller.pending_event = _event_from_pool(map, "shrine_anchor_loss", "shrine_lamp_flickers")
+	var card_threshold_preview: Dictionary = map._build_ui_snapshot()
+	_assert(_response_bonus_status_contains(card_threshold_preview.get("pending_event_response_preview", []), "handled", "阈值 -2"), "card route threshold modifier appears in preview")
+	map.card_controller.hand = ["death_transfer"]
+	map.card_controller.resources["action_points"] = 3
+	map.card_controller.resources["materials"] = 1
+	map.card_controller.resources["sanity"] = 5
+	map.card_controller.progress["source_clues"] = max(1, int(map.card_controller.progress.get("source_clues", 0)))
+	map.card_controller.play_card(0)
+	_assert(int(map.map_state.route_bonus_threshold_mods.get("death", 0)) == -1, "death transfer lowers death route bonus threshold")
+	_assert(int(map.map_state.route_affinity.get("death", 0)) >= 2, "death transfer adds death route affinity")
+	map.card_controller.pending_event = _event_from_pool(map, "graveyard_dead_tide", "grave_bell_rings")
+	var death_route_preview: Dictionary = map._build_ui_snapshot()
+	_assert(_response_bonus_status_contains(death_route_preview.get("pending_event_response_preview", []), "converted", "已解锁 死亡倾向"), "death transfer unlocks death route bonus preview")
+	_assert(_response_bonus_status_contains(death_route_preview.get("pending_event_response_preview", []), "converted", "阈值 -1"), "death route bonus preview shows card threshold modifier")
+
 	var event_tile: RefCounted = map.tiles[map.map_state.player_coord]
 	map.map_state.action_points = 1
 	map.card_controller.pending_event = {
@@ -159,7 +216,11 @@ func _ready() -> void:
 	_assert(int(map.map_state.route_affinity.get("life", 0)) >= 2, "cleanse adds life route affinity")
 	_assert(map.map_state.stage_reward_pending, "crisis resolution opens reward choices")
 	var reward_snapshot: Dictionary = map._build_ui_snapshot()
+	var reward_options: Array = reward_snapshot.get("stage_reward_options", [])
+	_assert(reward_options.size() == 3, "reward choices are capped at three")
 	_assert(_reward_summary_contains(reward_snapshot.get("stage_reward_options", []), "village_gratitude_followers", "信徒 +2"), "reward snapshot previews follower reward")
+	_assert(_reward_summary_contains(reward_options, "village_medicine_cache", "药草束 +1"), "route-weighted reward includes life medicine cache")
+	_assert(not _reward_exists(reward_options, "source_name_fragment"), "off-route reward is filtered out by three-choice cap")
 	var followers_before_reward := int(map.map_state.global_resources.get("followers", 0))
 	map._on_map_action_requested("claim_reward:village_gratitude_followers")
 	_assert(not map.map_state.stage_reward_pending, "claiming reward clears reward pending")
@@ -197,6 +258,7 @@ func _ready() -> void:
 	var route_preview: Dictionary = map._build_ui_snapshot()
 	_assert(_response_preview_contains(route_preview.get("pending_event_response_preview", []), "handled", "路线加成"), "route bonus appears in pending event preview")
 	_assert(_response_bonus_status_contains(route_preview.get("pending_event_response_preview", []), "handled", "已解锁 隐秘倾向 0/0"), "threshold item unlocks route bonus preview")
+	_assert(_response_bonus_status_contains(route_preview.get("pending_event_response_preview", []), "handled", "阈值 -1"), "secret route bonus preview shows threshold modifier")
 	var clues_before_route_bonus := int(map.card_controller.progress.get("source_clues", 0))
 	var secret_before_route_bonus := int(map.map_state.route_affinity.get("secret", 0))
 	map._on_map_action_requested("handle_pending_event")
@@ -217,6 +279,158 @@ func _ready() -> void:
 	_assert(map.map_state.stage_result_id == "resolve_claim_source_name", "old well crisis stores result id")
 	_assert(int(map.map_state.route_affinity.get("secret", 0)) == secret_before_well + 3, "old well source-name result adds secret route")
 	_assert(map.map_state.stage_reward_pending, "old well crisis opens reward choices")
+	var old_well_reward_snapshot: Dictionary = map._build_ui_snapshot()
+	var old_well_reward_options: Array = old_well_reward_snapshot.get("stage_reward_options", [])
+	_assert(old_well_reward_options.size() == 3, "old well reward choices are capped at three")
+	_assert(_reward_summary_contains(old_well_reward_options, "forbidden_name_insight", "污染牌：热病噩梦"), "forbidden reward previews pollution card cost")
+	_assert(_reward_summary_contains(old_well_reward_options, "forbidden_name_insight", "隐秘倾向加成阈值 -1"), "forbidden reward previews secret threshold bonus")
+	var fever_deck_before: int = map.card_controller.persistent_deck.count("fever_dream")
+	var fever_discard_before: int = map.card_controller.discard.count("fever_dream")
+	var secret_threshold_before_reward := int(map.map_state.route_bonus_threshold_mods.get("secret", 0))
+	map._on_map_action_requested("claim_reward:forbidden_name_insight")
+	_assert(map.card_controller.persistent_deck.count("fever_dream") == fever_deck_before + 1, "forbidden reward adds pollution card to persistent deck")
+	_assert(map.card_controller.discard.count("fever_dream") == fever_discard_before + 1, "forbidden reward adds pollution card to discard")
+	_assert(int(map.map_state.route_bonus_threshold_mods.get("secret", 0)) == secret_threshold_before_reward - 1, "forbidden reward lowers secret route threshold")
+	_assert(map.map_state.stage_node_pending, "claiming forbidden reward opens next node choices")
+	map._on_map_action_requested("choose_node:ruined_shrine_anchor")
+	_assert(not map.map_state.stage_node_pending, "choosing node clears pending before ascension")
+	map.map_state.global_resources["faith"] = max(6, int(map.map_state.global_resources.get("faith", 0)))
+	map.map_state.global_resources["followers"] = max(4, int(map.map_state.global_resources.get("followers", 0)))
+	map.map_state.global_resources["materials"] = max(2, int(map.map_state.global_resources.get("materials", 0)))
+	map.map_state.action_points = 2
+	var stored_clues_before_ascension := int(map.map_state.inventory.get("suspicious_clue", 0))
+	map.map_state.inventory["suspicious_clue"] = 0
+	var blocked_ascension_snapshot: Dictionary = map._build_ui_snapshot()
+	var blocked_ascension: Dictionary = blocked_ascension_snapshot.get("ascension", {})
+	_assert(not bool(blocked_ascension.get("ready", false)), "secret ascension requires route-specific clues")
+	_assert(str(blocked_ascension.get("status", "")).contains("异常线索 0/2"), "secret ascension status shows clue requirement")
+	map.map_state.inventory["suspicious_clue"] = max(2, stored_clues_before_ascension)
+	var ascension_snapshot: Dictionary = map._build_ui_snapshot()
+	var ascension: Dictionary = ascension_snapshot.get("ascension", {})
+	_assert(bool(ascension.get("ready", false)), "first ascension is ready after route and resources")
+	_assert(str(ascension.get("route", "")) == "secret", "first ascension chooses dominant secret route")
+	_assert(str(ascension.get("unlock_card_id", "")) == "ascend_secret_veil", "first ascension previews route power card")
+	_assert(_action_enabled(map._build_actions(), "perform_first_ascension"), "first ascension action is enabled")
+	var max_life_before_ascension: int = map.map_state.max_life
+	var faith_before_ascension := int(map.map_state.global_resources.get("faith", 0))
+	var materials_before_ascension := int(map.map_state.global_resources.get("materials", 0))
+	var clues_before_ascension := int(map.map_state.inventory.get("suspicious_clue", 0))
+	var pressure_before_ascension: int = map.map_state.secrecy_pressure
+	var secret_threshold_before_ascension := int(map.map_state.route_bonus_threshold_mods.get("secret", 0))
+	var veil_deck_before: int = map.card_controller.persistent_deck.count("ascend_secret_veil")
+	var veil_discard_before: int = map.card_controller.discard.count("ascend_secret_veil")
+	map._on_map_action_requested("perform_first_ascension")
+	_assert(map.map_state.ascension_tier == 1, "first ascension stores ascension tier")
+	_assert(map.map_state.ascension_route == "secret", "first ascension stores route")
+	_assert(map.map_state.max_life == max_life_before_ascension + 2, "first ascension increases max life")
+	_assert(int(map.map_state.global_resources.get("faith", 0)) == faith_before_ascension - 6, "first ascension spends faith")
+	_assert(int(map.map_state.global_resources.get("materials", 0)) == materials_before_ascension - 2, "first ascension spends materials")
+	_assert(int(map.map_state.inventory.get("suspicious_clue", 0)) == clues_before_ascension - 1, "secret ascension spends one clue")
+	_assert(map.map_state.secrecy_pressure == max(0, pressure_before_ascension - 2), "secret ascension lowers secrecy pressure")
+	_assert(int(map.map_state.route_bonus_threshold_mods.get("secret", 0)) == secret_threshold_before_ascension - 1, "secret ascension lowers secret route threshold")
+	_assert(map.card_controller.persistent_deck.count("ascend_secret_veil") == veil_deck_before + 1, "first ascension adds route power card to persistent deck")
+	_assert(map.card_controller.discard.count("ascend_secret_veil") == veil_discard_before + 1, "first ascension adds route power card to discard")
+	var ascended_snapshot: Dictionary = map._build_ui_snapshot()
+	var ascended: Dictionary = ascended_snapshot.get("ascension", {})
+	_assert(bool(ascended.get("complete", false)), "ascension snapshot marks completion")
+	_assert(str(ascended.get("unlock_card_name", "")) == "无名帷幕", "ascension snapshot keeps unlocked card name")
+	_assert(not _action_enabled(map._build_actions(), "perform_first_ascension"), "first ascension cannot be repeated")
+	var power_upgrade: Dictionary = ascended.get("power_upgrade", {})
+	_assert(not bool(power_upgrade.get("ready", false)), "route power upgrade needs post-ascension resources")
+	_assert(str(power_upgrade.get("to_card_name", "")) == "无名帷幕·匿名", "route power upgrade previews upgraded card")
+	map.map_state.global_resources["faith"] = 2
+	map.map_state.global_resources["materials"] = 1
+	map.map_state.action_points = 1
+	var upgrade_ready_snapshot: Dictionary = map._build_ui_snapshot()
+	var upgrade_ready: Dictionary = upgrade_ready_snapshot.get("ascension", {}).get("power_upgrade", {})
+	_assert(bool(upgrade_ready.get("ready", false)), "route power upgrade is ready after resources")
+	_assert(_action_enabled(map._build_actions(), "upgrade_route_power"), "route power upgrade action is enabled")
+	var base_power_deck_before: int = map.card_controller.persistent_deck.count("ascend_secret_veil")
+	var base_power_discard_before: int = map.card_controller.discard.count("ascend_secret_veil")
+	var upgraded_power_deck_before: int = map.card_controller.persistent_deck.count("ascend_secret_veil_II")
+	var upgraded_power_discard_before: int = map.card_controller.discard.count("ascend_secret_veil_II")
+	map._on_map_action_requested("upgrade_route_power")
+	_assert(map.map_state.power_card_upgraded, "route power upgrade marks state")
+	_assert(map.map_state.action_points == 0, "route power upgrade spends action point")
+	_assert(int(map.map_state.global_resources.get("faith", 0)) == 0, "route power upgrade spends faith")
+	_assert(int(map.map_state.global_resources.get("materials", 0)) == 0, "route power upgrade spends materials")
+	_assert(map.card_controller.persistent_deck.count("ascend_secret_veil") == base_power_deck_before - 1, "route power upgrade removes base card from persistent deck")
+	_assert(map.card_controller.discard.count("ascend_secret_veil") == base_power_discard_before - 1, "route power upgrade removes base card from discard")
+	_assert(map.card_controller.persistent_deck.count("ascend_secret_veil_II") == upgraded_power_deck_before + 1, "route power upgrade adds upgraded card to persistent deck")
+	_assert(map.card_controller.discard.count("ascend_secret_veil_II") == upgraded_power_discard_before + 1, "route power upgrade adds upgraded card to discard")
+	_assert(not _action_enabled(map._build_actions(), "upgrade_route_power"), "route power upgrade cannot repeat")
+	map.map_state.global_resources["faith"] = 2
+	map.map_state.global_resources["materials"] = 1
+	map.map_state.global_resources["followers"] = max(2, int(map.map_state.global_resources.get("followers", 0)))
+	map.map_state.action_points = 2
+	var cult_tile: RefCounted = map.tiles[map.map_state.player_coord]
+	var cult_cells_before := int(map.map_state.global_resources.get("cult_cells", 0))
+	var followers_before_cult := int(map.map_state.global_resources.get("followers", 0))
+	var secret_before_cult := int(map.map_state.route_affinity.get("secret", 0))
+	_assert(_action_enabled(map._build_actions(), "establish_cult_cell"), "cult cell action is enabled after ascension")
+	map._on_map_action_requested("establish_cult_cell")
+	_assert(map.map_state.action_points == 0, "cult cell spends action points")
+	_assert(int(map.map_state.global_resources.get("faith", 0)) == 0, "cult cell spends faith")
+	_assert(int(map.map_state.global_resources.get("materials", 0)) == 0, "cult cell spends materials")
+	_assert(int(map.map_state.global_resources.get("followers", 0)) == followers_before_cult - 2, "cult cell assigns followers")
+	_assert(int(map.map_state.global_resources.get("cult_cells", 0)) == cult_cells_before + 1, "cult cell increases organization count")
+	_assert(int(map.map_state.route_affinity.get("secret", 0)) == secret_before_cult + 1, "cult cell strengthens ascension route")
+	_assert(cult_tile.has_building("cult_cell"), "cult cell adds building to current tile")
+	_assert(cult_tile.owner == "隐秘教团", "cult cell claims current tile")
+	var faith_before_cult_turn := int(map.map_state.global_resources.get("faith", 0))
+	map._on_map_action_requested("end_turn")
+	_assert(int(map.map_state.global_resources.get("faith", 0)) >= faith_before_cult_turn + 2, "cult cell produces faith on end turn")
+	map.map_state.global_resources["followers"] = max(1, int(map.map_state.global_resources.get("followers", 0)))
+	map.map_state.global_resources["faith"] = max(2, int(map.map_state.global_resources.get("faith", 0)))
+	var apostles_before := int(map.map_state.global_resources.get("apostles", 0))
+	var followers_before_apostle := int(map.map_state.global_resources.get("followers", 0))
+	var faith_before_apostle := int(map.map_state.global_resources.get("faith", 0))
+	var secret_before_apostle := int(map.map_state.route_affinity.get("secret", 0))
+	_assert(_action_enabled(map._build_actions(), "appoint_apostle"), "appoint apostle is enabled with cult cell")
+	map._on_map_action_requested("appoint_apostle")
+	_assert(int(map.map_state.global_resources.get("apostles", 0)) == apostles_before + 1, "appoint apostle increases apostles")
+	_assert(int(map.map_state.global_resources.get("followers", 0)) == followers_before_apostle - 1, "appoint apostle consumes follower")
+	_assert(int(map.map_state.global_resources.get("faith", 0)) == faith_before_apostle - 2, "appoint apostle spends faith")
+	_assert(int(map.map_state.route_affinity.get("secret", 0)) == secret_before_apostle + 1, "appoint apostle strengthens ascension route")
+	var materials_before_dispatch := int(map.map_state.global_resources.get("materials", 0))
+	var clues_before_dispatch := int(map.map_state.inventory.get("suspicious_clue", 0))
+	var card_clues_before_dispatch := int(map.card_controller.progress.get("source_clues", 0))
+	var pressure_before_dispatch: int = map.map_state.secrecy_pressure
+	var secret_before_dispatch := int(map.map_state.route_affinity.get("secret", 0))
+	_assert(_action_enabled(map._build_actions(), "dispatch_apostle"), "dispatch apostle is enabled after appointment")
+	map._on_map_action_requested("dispatch_apostle")
+	_assert(int(map.map_state.global_resources.get("materials", 0)) == materials_before_dispatch + 1, "dispatch apostle gains material")
+	_assert(int(map.map_state.inventory.get("suspicious_clue", 0)) == clues_before_dispatch + 1, "dispatch apostle gains clue item")
+	_assert(int(map.card_controller.progress.get("source_clues", 0)) == card_clues_before_dispatch + 1, "dispatch apostle advances card clue progress")
+	_assert(map.map_state.secrecy_pressure == pressure_before_dispatch + 1, "dispatch apostle increases secrecy pressure")
+	_assert(int(map.map_state.route_affinity.get("secret", 0)) == secret_before_dispatch + 1, "dispatch apostle strengthens route")
+	map.map_state.ascension_route = "life"
+	map.map_state.action_points = 1
+	var herbs_before_life_dispatch := int(map.map_state.inventory.get("medicinal_herb_bundle", 0))
+	var cure_before_life_dispatch := int(map.card_controller.progress.get("cure_progress", 0))
+	var life_before_dispatch := int(map.map_state.route_affinity.get("life", 0))
+	_assert(_action_enabled(map._build_actions(), "dispatch_apostle"), "life route apostle dispatch is enabled")
+	map._on_map_action_requested("dispatch_apostle")
+	_assert(int(map.map_state.inventory.get("medicinal_herb_bundle", 0)) == herbs_before_life_dispatch + 1, "life apostle brings herb")
+	_assert(int(map.card_controller.progress.get("cure_progress", 0)) == cure_before_life_dispatch + 1, "life apostle advances cure progress")
+	_assert(int(map.map_state.route_affinity.get("life", 0)) == life_before_dispatch + 1, "life apostle strengthens life route")
+	map.map_state.secrecy_pressure = 4
+	map.map_state.action_points = 1
+	var cure_before_conceal := int(map.card_controller.progress.get("cure_progress", 0))
+	var life_before_conceal := int(map.map_state.route_affinity.get("life", 0))
+	_assert(_action_enabled(map._build_actions(), "conceal_organization"), "conceal organization is enabled before hunt")
+	map._on_map_action_requested("conceal_organization")
+	_assert(map.map_state.secrecy_pressure == 2, "life organization conceal lowers pressure")
+	_assert(int(map.card_controller.progress.get("cure_progress", 0)) == cure_before_conceal + 1, "life organization conceal advances cure")
+	_assert(int(map.map_state.route_affinity.get("life", 0)) == life_before_conceal + 1, "life organization conceal strengthens life route")
+	map.map_state.secrecy_pressure = 5
+	var apostles_before_hunt := int(map.map_state.global_resources.get("apostles", 0))
+	var pressure_before_hunt: int = map.map_state.secrecy_pressure
+	var hunt_tile: RefCounted = map.tiles[map.map_state.player_coord]
+	map._on_map_action_requested("end_turn")
+	_assert(int(map.map_state.global_resources.get("apostles", 0)) == apostles_before_hunt - 1, "organization hunt removes an apostle")
+	_assert(map.map_state.secrecy_pressure == max(0, pressure_before_hunt - 2), "organization hunt lowers pressure after raid")
+	_assert(hunt_tile.has_state("enemy_attention"), "organization hunt marks enemy attention")
 
 	print("HEX_MAP_SMOKE_OK")
 	get_tree().quit()
@@ -271,6 +485,13 @@ func _reward_summary_contains(entries: Array, reward_id: String, text: String) -
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		if str(entry.get("id", "")) == reward_id and str(entry.get("effect_summary", "")).contains(text):
+			return true
+	return false
+
+
+func _reward_exists(entries: Array, reward_id: String) -> bool:
+	for entry in entries:
+		if typeof(entry) == TYPE_DICTIONARY and str(entry.get("id", "")) == reward_id:
 			return true
 	return false
 

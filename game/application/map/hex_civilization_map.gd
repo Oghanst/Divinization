@@ -19,6 +19,7 @@ const STAGE_REWARD_DEFS_PATH := "res://data/demo/hex_map/stage_reward_defs.json"
 const STAGE_NODE_DEFS_PATH := "res://data/demo/hex_map/stage_node_defs.json"
 const STAGE_CRISIS_DEFS_PATH := "res://data/demo/hex_map/stage_crisis_defs.json"
 const STAGE_EVENT_DEFS_PATH := "res://data/demo/hex_map/stage_event_defs.json"
+const ASCENSION_DEFS_PATH := "res://data/demo/hex_map/ascension_defs.json"
 const CARD_GLOBAL_RESOURCE_KEYS := ["faith", "materials", "followers"]
 const CARD_ROUTE_PROGRESS_TO_AFFINITY := {
 	"life_route": "life",
@@ -29,6 +30,80 @@ const CARD_ROUTE_PROGRESS_TO_AFFINITY := {
 const ITEM_ACTION_PREFIX := "use_item:"
 const REWARD_ACTION_PREFIX := "claim_reward:"
 const NODE_ACTION_PREFIX := "choose_node:"
+const STAGE_REWARD_OPTION_LIMIT := 3
+const ASCENSION_ACTION_ID := "perform_first_ascension"
+const POWER_UPGRADE_ACTION_ID := "upgrade_route_power"
+const FIRST_ASCENSION_REQUIRED_LEVEL := 2
+const FIRST_ASCENSION_REQUIRED_ROUTE := 5
+const FIRST_ASCENSION_REQUIRED_FAITH := 6
+const FIRST_ASCENSION_REQUIRED_FOLLOWERS := 4
+const FIRST_ASCENSION_REQUIRED_MATERIALS := 2
+const FIRST_ASCENSION_ACTION_POINT_COST := 2
+const FIRST_ASCENSION_ROUTE_CARD_IDS := {
+	"life": "ascend_life_benediction",
+	"faith": "ascend_faith_sigil",
+	"death": "ascend_death_breath",
+	"secret": "ascend_secret_veil",
+}
+const ORGANIZATION_HUNT_PRESSURE_THRESHOLD := 5
+const ORGANIZATION_HUNT_PRESSURE_RELIEF := -2
+const APOSTLE_DISPATCH_EFFECTS := {
+	"life": [
+		{"scope": "inventory", "item": "medicinal_herb_bundle", "delta": 1},
+		{"scope": "card_progress", "key": "cure_progress", "delta": 1},
+		{"scope": "route_affinity", "route": "life", "delta": 1},
+		{"scope": "secrecy_pressure", "delta": 1},
+		{"scope": "log", "text": "生命使徒救治病人，带回药草和治疗见证，但行迹也更容易被看见。"},
+	],
+	"faith": [
+		{"scope": "global_resource", "key": "followers", "delta": 1},
+		{"scope": "card_progress", "key": "anchor_progress", "delta": 1},
+		{"scope": "route_affinity", "route": "faith", "delta": 1},
+		{"scope": "secrecy_pressure", "delta": 1},
+		{"scope": "log", "text": "信仰使徒组织小型祈祷，带回新信徒和锚点回应，也留下公开痕迹。"},
+	],
+	"death": [
+		{"scope": "inventory", "item": "plague_residue", "delta": 1},
+		{"scope": "card_progress", "key": "infection", "delta": -1},
+		{"scope": "route_affinity", "route": "death", "delta": 1},
+		{"scope": "secrecy_pressure", "delta": 1},
+		{"scope": "log", "text": "死亡使徒收殓病死者，带回疫病残材并压下一处感染，但冷意引来注视。"},
+	],
+	"secret": [
+		{"scope": "global_resource", "key": "materials", "delta": 1},
+		{"scope": "inventory", "item": "suspicious_clue", "delta": 1},
+		{"scope": "card_progress", "key": "source_clues", "delta": 1},
+		{"scope": "route_affinity", "route": "secret", "delta": 1},
+		{"scope": "secrecy_pressure", "delta": 1},
+		{"scope": "log", "text": "隐秘使徒潜入可疑地点，带回材料和异常线索，但追踪压力也随之上升。"},
+	],
+}
+const ORGANIZATION_CONCEAL_EFFECTS := {
+	"life": [
+		{"scope": "secrecy_pressure", "delta": -2},
+		{"scope": "card_progress", "key": "cure_progress", "delta": 1},
+		{"scope": "route_affinity", "route": "life", "delta": 1},
+		{"scope": "log", "text": "生命教团用救治与安置遮住行迹，追踪压力下降。"},
+	],
+	"faith": [
+		{"scope": "secrecy_pressure", "delta": -1},
+		{"scope": "global_resource", "key": "faith", "delta": 1},
+		{"scope": "route_affinity", "route": "faith", "delta": 1},
+		{"scope": "log", "text": "信仰教团用公开善行稀释异常传闻，追踪压力小幅下降。"},
+	],
+	"death": [
+		{"scope": "secrecy_pressure", "delta": -2},
+		{"scope": "card_progress", "key": "infection", "delta": -1},
+		{"scope": "route_affinity", "route": "death", "delta": 1},
+		{"scope": "log", "text": "死亡教团收束尸证与病灶，追踪者暂时失去线索。"},
+	],
+	"secret": [
+		{"scope": "secrecy_pressure", "delta": -3},
+		{"scope": "card_progress", "key": "source_clues", "delta": 1},
+		{"scope": "route_affinity", "route": "secret", "delta": 1},
+		{"scope": "log", "text": "隐秘教团抹去几处关键痕迹，并从追踪者那里反推出异常线索。"},
+	],
+}
 
 @export var map_radius: int = 4
 @export var hex_size: float = 52.0
@@ -55,6 +130,7 @@ var stage_reward_defs: Dictionary = {}
 var stage_node_defs: Dictionary = {}
 var stage_crisis_defs: Dictionary = {}
 var stage_event_defs: Dictionary = {}
+var ascension_defs: Dictionary = {}
 var resource_to_item_id: Dictionary = {}
 var event_log: Array[String] = []
 var map_ui_scale := 1.0
@@ -87,6 +163,7 @@ func end_turn() -> void:
 	if faith_gain > 0:
 		map_state.change_global_resource("faith", faith_gain)
 		_log("回合结算：信仰 +%s。" % str(faith_gain))
+	_resolve_organization_hunt()
 	map_state.turn += 1
 	map_state.reset_action_points()
 	_advance_stage_event()
@@ -98,6 +175,35 @@ func end_card_and_map_turn() -> void:
 	if card_controller != null:
 		card_controller.end_turn()
 	end_turn()
+
+
+func _resolve_organization_hunt() -> void:
+	if map_state.secrecy_pressure < ORGANIZATION_HUNT_PRESSURE_THRESHOLD:
+		return
+	if int(map_state.global_resources.get("cult_cells", 0)) <= 0 and int(map_state.global_resources.get("apostles", 0)) <= 0:
+		return
+	var hunted_tile := _get_organization_attention_tile()
+	if hunted_tile != null:
+		hunted_tile.add_state("enemy_attention")
+	if int(map_state.global_resources.get("apostles", 0)) > 0:
+		map_state.change_global_resource("apostles", -1)
+		_log("追猎搜查：一名使徒被敌对势力迫使失联，当前地块留下敌人注意。")
+	elif int(map_state.global_resources.get("followers", 0)) > 0:
+		map_state.change_global_resource("followers", -1)
+		_log("追猎搜查：一名外围信徒被盘问，当前地块留下敌人注意。")
+	else:
+		_log("追猎搜查：敌对势力逼近教团据点，当前地块留下敌人注意。")
+	map_state.change_secrecy_pressure(ORGANIZATION_HUNT_PRESSURE_RELIEF)
+
+
+func _get_organization_attention_tile() -> RefCounted:
+	var current_tile: RefCounted = tiles.get(map_state.player_coord)
+	if current_tile != null:
+		return current_tile
+	for tile in tiles.values():
+		if tile.has_building("cult_cell"):
+			return tile
+	return null
 
 
 func apply_map_effect(effect: Dictionary) -> void:
@@ -151,6 +257,7 @@ func _load_config_defs() -> void:
 	stage_node_defs = _defs_by_id(_read_json_array(STAGE_NODE_DEFS_PATH))
 	stage_crisis_defs = _defs_by_id(_read_json_array(STAGE_CRISIS_DEFS_PATH))
 	stage_event_defs = _defs_by_id(_read_json_array(STAGE_EVENT_DEFS_PATH))
+	ascension_defs = _defs_by_id(_read_json_array(ASCENSION_DEFS_PATH))
 	resource_to_item_id.clear()
 	for item_id in item_defs.keys():
 		var item_def: Dictionary = item_defs[item_id]
@@ -282,6 +389,12 @@ func _on_map_action_requested(action_id: String) -> void:
 	if action_id.begins_with(ITEM_ACTION_PREFIX):
 		_try_use_item(action_id.substr(ITEM_ACTION_PREFIX.length()))
 		return
+	if action_id == ASCENSION_ACTION_ID:
+		_try_perform_first_ascension()
+		return
+	if action_id == POWER_UPGRADE_ACTION_ID:
+		_try_upgrade_route_power()
+		return
 	match action_id:
 		"move":
 			_try_move_to_selected_tile()
@@ -303,6 +416,14 @@ func _on_map_action_requested(action_id: String) -> void:
 			_try_respond_pending_event("ignored", action_id)
 		"build_secret_shrine":
 			_try_build_secret_shrine()
+		"establish_cult_cell":
+			_try_establish_cult_cell()
+		"appoint_apostle":
+			_try_appoint_apostle()
+		"dispatch_apostle":
+			_try_dispatch_apostle()
+		"conceal_organization":
+			_try_conceal_organization()
 		"enter_encounter":
 			_try_enter_encounter()
 		"end_turn":
@@ -343,6 +464,9 @@ func _on_card_effects_applied(effects: Array, source: Dictionary) -> void:
 				elif CARD_ROUTE_PROGRESS_TO_AFFINITY.has(key) and value > 0:
 					map_state.change_route_affinity(str(CARD_ROUTE_PROGRESS_TO_AFFINITY[key]), value)
 					changed = true
+			"route_bonus_threshold":
+				map_state.change_route_bonus_threshold(str(effect.get("route", "")), value)
+				changed = true
 			"map_tile_state":
 				var current_tile: RefCounted = tiles.get(map_state.player_coord)
 				if current_tile != null:
@@ -539,6 +663,76 @@ func _try_build_secret_shrine() -> void:
 	_update_after_map_change()
 
 
+func _try_establish_cult_cell() -> void:
+	var result := _evaluate_action("establish_cult_cell")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法建立教团据点。")))
+		_update_ui()
+		return
+	var tile: RefCounted = tiles[map_state.player_coord]
+	var building_def: Dictionary = building_defs.get("cult_cell", {})
+	map_state.spend_action_points(int(result.get("cost", 2)))
+	map_state.change_global_resource("faith", -int(building_def.get("faith_cost", 0)))
+	map_state.change_global_resource("materials", -int(building_def.get("material_cost", 0)))
+	map_state.change_global_resource("followers", -int(building_def.get("follower_cost", 0)))
+	map_state.change_global_resource("cult_cells", 1)
+	map_state.change_route_affinity(map_state.ascension_route, 1)
+	tile.explored = true
+	tile.claim(PLAYER_OWNER)
+	tile.add_building("cult_cell", building_def.get("yield_bonus", {}))
+	_log("教团据点建立：一批信徒被编入组织，此地开始稳定产出信仰。")
+	_update_after_map_change()
+
+
+func _try_appoint_apostle() -> void:
+	var result := _evaluate_action("appoint_apostle")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法任命使徒。")))
+		_update_ui()
+		return
+	map_state.spend_action_points(int(result.get("cost", 1)))
+	map_state.change_global_resource("faith", -2)
+	map_state.change_global_resource("followers", -1)
+	map_state.change_global_resource("apostles", 1)
+	map_state.change_route_affinity(map_state.ascension_route, 1)
+	_log("任命使徒：一名信徒被托付神名，开始替你行走。")
+	_update_after_map_change()
+
+
+func _try_dispatch_apostle() -> void:
+	var result := _evaluate_action("dispatch_apostle")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法派遣使徒。")))
+		_update_ui()
+		return
+	map_state.spend_action_points(int(result.get("cost", 1)))
+	_apply_stage_reward_effects(_get_apostle_dispatch_effects(map_state.ascension_route))
+	_log("派遣使徒：%s路线的使徒完成了一次代理行动。" % _route_short_name(map_state.ascension_route))
+	_update_after_map_change()
+
+
+func _try_conceal_organization() -> void:
+	var result := _evaluate_action("conceal_organization")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法遮蔽教团。")))
+		_update_ui()
+		return
+	map_state.spend_action_points(int(result.get("cost", 1)))
+	_apply_stage_reward_effects(_get_organization_conceal_effects(map_state.ascension_route))
+	_log("遮蔽教团：%s路线的组织处理了近期留下的痕迹。" % _route_short_name(map_state.ascension_route))
+	_update_after_map_change()
+
+
+func _get_apostle_dispatch_effects(route_id: String) -> Array:
+	var effects: Array = APOSTLE_DISPATCH_EFFECTS.get(route_id, APOSTLE_DISPATCH_EFFECTS.get("secret", []))
+	return effects.duplicate(true)
+
+
+func _get_organization_conceal_effects(route_id: String) -> Array:
+	var effects: Array = ORGANIZATION_CONCEAL_EFFECTS.get(route_id, ORGANIZATION_CONCEAL_EFFECTS.get("secret", []))
+	return effects.duplicate(true)
+
+
 func _try_enter_encounter() -> void:
 	var result := _evaluate_action("enter_encounter")
 	if not bool(result.get("enabled", false)):
@@ -575,18 +769,52 @@ func _try_use_item(item_id: String) -> void:
 
 func _open_stage_rewards(result_id: String) -> void:
 	map_state.stage_reward_options.clear()
+	var candidates: Array = []
+	var order := 0
 	for reward_id in stage_reward_defs.keys():
 		var reward_def: Dictionary = stage_reward_defs[reward_id]
 		var result_ids: Array = reward_def.get("result_ids", [])
 		if result_ids.is_empty() or result_ids.has(result_id):
-			map_state.stage_reward_options.append(reward_def.duplicate(true))
+			var candidate := reward_def.duplicate(true)
+			candidate["_reward_score"] = _score_stage_reward(candidate)
+			candidate["_reward_order"] = order
+			candidates.append(candidate)
+		order += 1
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return _stage_reward_sort_less(a, b)
+	)
+	for candidate in candidates:
+		if map_state.stage_reward_options.size() >= STAGE_REWARD_OPTION_LIMIT:
+			break
+		map_state.stage_reward_options.append(candidate)
 	if map_state.stage_reward_options.is_empty():
 		map_state.stage_reward_pending = false
 		map_state.stage_reward_claimed = true
 		return
 	map_state.stage_reward_pending = true
 	map_state.stage_reward_claimed = false
-	_log("阶段奖励：选择一种奖励，决定病村事件留下什么成长。")
+	_log("阶段奖励：从最多三种成长中选择一种，决定病村事件留下什么路线。")
+
+
+func _score_stage_reward(reward_def: Dictionary) -> int:
+	var score := int(reward_def.get("weight", 0))
+	match str(reward_def.get("rarity", "common")):
+		"rare":
+			score += 8
+		"uncommon":
+			score += 4
+	for route in reward_def.get("route_tags", []):
+		var route_id := str(route)
+		score += int(map_state.route_affinity.get(route_id, 0)) * 10
+	return score
+
+
+func _stage_reward_sort_less(a: Dictionary, b: Dictionary) -> bool:
+	var score_a := int(a.get("_reward_score", 0))
+	var score_b := int(b.get("_reward_score", 0))
+	if score_a == score_b:
+		return int(a.get("_reward_order", 0)) < int(b.get("_reward_order", 0))
+	return score_a > score_b
 
 
 func _try_claim_stage_reward(reward_id: String) -> void:
@@ -972,6 +1200,65 @@ func _evaluate_action(action_id: String) -> Dictionary:
 			elif int(map_state.global_resources.get("materials", 0)) < material_cost:
 				enabled = false
 				reason = "缺少材料"
+		"establish_cult_cell":
+			var building_def: Dictionary = building_defs.get("cult_cell", {})
+			var material_cost := int(building_def.get("material_cost", 0))
+			var faith_cost := int(building_def.get("faith_cost", 0))
+			var follower_cost := int(building_def.get("follower_cost", 0))
+			if map_state.ascension_tier < 1:
+				enabled = false
+				reason = "先完成第一次晋升"
+			elif current_tile == null:
+				enabled = false
+				reason = "当前位置无效"
+			elif not current_tile.explored:
+				enabled = false
+				reason = "地块未调查"
+			elif building_def.get("terrain_blocklist", []).has(current_tile.terrain):
+				enabled = false
+				reason = "该地形不可建立"
+			elif current_tile.has_core_building():
+				enabled = false
+				reason = "已有核心建筑"
+			elif int(map_state.global_resources.get("faith", 0)) < faith_cost:
+				enabled = false
+				reason = "缺少信仰"
+			elif int(map_state.global_resources.get("materials", 0)) < material_cost:
+				enabled = false
+				reason = "缺少材料"
+			elif int(map_state.global_resources.get("followers", 0)) < follower_cost:
+				enabled = false
+				reason = "缺少信徒"
+		"appoint_apostle":
+			if map_state.ascension_tier < 1:
+				enabled = false
+				reason = "先完成第一次晋升"
+			elif int(map_state.global_resources.get("cult_cells", 0)) <= 0:
+				enabled = false
+				reason = "需要教团据点"
+			elif int(map_state.global_resources.get("faith", 0)) < 2:
+				enabled = false
+				reason = "缺少信仰"
+			elif int(map_state.global_resources.get("followers", 0)) < 1:
+				enabled = false
+				reason = "缺少信徒"
+		"dispatch_apostle":
+			if map_state.ascension_tier < 1:
+				enabled = false
+				reason = "先完成第一次晋升"
+			elif int(map_state.global_resources.get("apostles", 0)) <= 0:
+				enabled = false
+				reason = "需要使徒"
+		"conceal_organization":
+			if map_state.ascension_tier < 1:
+				enabled = false
+				reason = "先完成第一次晋升"
+			elif int(map_state.global_resources.get("cult_cells", 0)) <= 0 and int(map_state.global_resources.get("apostles", 0)) <= 0:
+				enabled = false
+				reason = "需要教团据点或使徒"
+			elif map_state.secrecy_pressure <= 0:
+				enabled = false
+				reason = "暂未被追踪"
 		"enter_encounter":
 			if current_tile == null:
 				enabled = false
@@ -1010,7 +1297,7 @@ func _build_actions() -> Array:
 			if typeof(action) == TYPE_DICTIONARY:
 				crisis_actions.append(_evaluate_crisis_action(str(action.get("id", ""))))
 		return crisis_actions
-	return [
+	var actions := [
 		_evaluate_action("move"),
 		_evaluate_action("investigate"),
 		_evaluate_action("gather"),
@@ -1021,9 +1308,18 @@ func _build_actions() -> Array:
 		_evaluate_action("exploit_pending_event"),
 		_evaluate_action("ignore_pending_event"),
 		_evaluate_action("build_secret_shrine"),
+		_evaluate_action("establish_cult_cell"),
+		_evaluate_action("appoint_apostle"),
+		_evaluate_action("dispatch_apostle"),
+		_evaluate_action("conceal_organization"),
 		_evaluate_action("enter_encounter"),
-		_evaluate_action("end_turn"),
 	]
+	if map_state.ascension_tier >= 1:
+		actions.append(_evaluate_route_power_upgrade_action())
+	else:
+		actions.append(_evaluate_first_ascension_action())
+	actions.append(_evaluate_action("end_turn"))
+	return actions
 
 
 func _update_after_map_change() -> void:
@@ -1048,6 +1344,7 @@ func _build_ui_snapshot() -> Dictionary:
 		"max_life": map_state.max_life,
 		"level": map_state.level,
 		"experience": map_state.experience,
+		"ascension": _build_ascension_snapshot(),
 		"sanity_status": map_state.sanity_status,
 		"secrecy_status": "%s（压力 %s）" % [map_state.secrecy_status, str(map_state.secrecy_pressure)],
 		"player_coord": map_state.player_coord,
@@ -1113,6 +1410,381 @@ func _build_stage_reward_snapshot() -> Array:
 			"enabled": bool(action.get("enabled", false)),
 		})
 	return entries
+
+
+func _build_ascension_snapshot() -> Dictionary:
+	var route_id: String = map_state.ascension_route if map_state.ascension_tier >= 1 else _dominant_route_id()
+	var context := _build_first_ascension_context(route_id)
+	return {
+		"tier": map_state.ascension_tier,
+		"complete": map_state.ascension_tier >= 1,
+		"route": route_id,
+		"route_name": _route_short_name(route_id),
+		"ready": bool(context.get("ready", false)),
+		"status": _format_first_ascension_status(context),
+		"action_id": ASCENSION_ACTION_ID,
+		"unlock_card_id": _first_ascension_card_id(route_id),
+		"unlock_card_name": _first_ascension_card_name(route_id),
+		"power_upgrade": _build_route_power_upgrade_context(route_id),
+	}
+
+
+func _try_perform_first_ascension() -> void:
+	var result := _evaluate_first_ascension_action()
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "晋升条件不足。")))
+		_update_ui()
+		return
+	var route_id := _dominant_route_id()
+	var context := _build_first_ascension_context(route_id)
+	map_state.spend_action_points(int(context.get("action_point_cost", FIRST_ASCENSION_ACTION_POINT_COST)))
+	_apply_ascension_costs(context.get("costs", []))
+	map_state.complete_first_ascension(route_id)
+	map_state.change_route_affinity(route_id, 1)
+	_apply_stage_reward_effects(context.get("completion_effects", []))
+	var card_name := _grant_first_ascension_card(route_id)
+	var unlock_text := "" if card_name.is_empty() else "，权能牌《%s》进入牌组" % card_name
+	_log("第一次晋升仪式完成：你以%s路线踏过凡俗边界%s。" % [_route_short_name(route_id), unlock_text])
+	_update_after_map_change()
+
+
+func _evaluate_first_ascension_action() -> Dictionary:
+	var route_id := _dominant_route_id()
+	var context := _build_first_ascension_context(route_id)
+	var enabled := bool(context.get("ready", false))
+	var reason := ""
+	if map_state.ascension_tier >= 1:
+		enabled = false
+		reason = "已完成第一次晋升"
+	elif not enabled:
+		reason = str(context.get("missing", "晋升条件不足"))
+	elif not map_state.can_spend_action_points(int(context.get("action_point_cost", FIRST_ASCENSION_ACTION_POINT_COST))):
+		enabled = false
+		reason = "行动点不足"
+	return {
+		"id": ASCENSION_ACTION_ID,
+		"label": "举行晋升仪式",
+		"enabled": enabled,
+		"reason": reason,
+		"cost": int(context.get("action_point_cost", FIRST_ASCENSION_ACTION_POINT_COST)),
+		"summary": _format_first_ascension_status(context),
+	}
+
+
+func _build_first_ascension_context(route_id: String) -> Dictionary:
+	var ascension_def := _get_first_ascension_def(route_id)
+	var requirement_entries: Array = []
+	var missing_parts: Array[String] = []
+	for requirement in ascension_def.get("requirements", []):
+		if typeof(requirement) != TYPE_DICTIONARY:
+			continue
+		var entry := _build_ascension_requirement_entry(requirement)
+		requirement_entries.append(entry)
+		if not bool(entry.get("met", false)):
+			missing_parts.append(_format_ascension_requirement_gap(entry))
+	for cost in ascension_def.get("costs", []):
+		if typeof(cost) != TYPE_DICTIONARY:
+			continue
+		var cost_entry := _build_ascension_requirement_entry(_ascension_cost_to_requirement(cost))
+		requirement_entries.append(cost_entry)
+		if not bool(cost_entry.get("met", false)):
+			missing_parts.append(_format_ascension_requirement_gap(cost_entry))
+	return {
+		"route": route_id,
+		"route_name": _route_short_name(route_id),
+		"name": str(ascension_def.get("name", "%s初阶仪式" % _route_short_name(route_id))),
+		"description": str(ascension_def.get("description", "")),
+		"requirements": requirement_entries,
+		"costs": ascension_def.get("costs", []).duplicate(true),
+		"completion_effects": ascension_def.get("completion_effects", []).duplicate(true),
+		"action_point_cost": int(ascension_def.get("action_point_cost", FIRST_ASCENSION_ACTION_POINT_COST)),
+		"route_value": int(map_state.route_affinity.get(route_id, 0)),
+		"unlock_card_name": _first_ascension_card_name(route_id),
+		"ready": missing_parts.is_empty() and map_state.ascension_tier < 1,
+		"missing": "；".join(missing_parts),
+	}
+
+
+func _get_first_ascension_def(route_id: String) -> Dictionary:
+	var ascension_def: Dictionary = ascension_defs.get(route_id, {})
+	if not ascension_def.is_empty():
+		return ascension_def
+	return {
+		"id": route_id,
+		"name": "%s初阶仪式" % _route_short_name(route_id),
+		"action_point_cost": FIRST_ASCENSION_ACTION_POINT_COST,
+		"unlock_card_id": FIRST_ASCENSION_ROUTE_CARD_IDS.get(route_id, ""),
+		"requirements": [
+			{"scope": "level", "label": "等级", "value": FIRST_ASCENSION_REQUIRED_LEVEL},
+			{"scope": "route_affinity", "route": route_id, "label": _route_short_name(route_id), "value": FIRST_ASCENSION_REQUIRED_ROUTE},
+			{"scope": "global_resource", "key": "followers", "label": "信徒", "value": FIRST_ASCENSION_REQUIRED_FOLLOWERS},
+		],
+		"costs": [
+			{"scope": "global_resource", "key": "faith", "label": "信仰", "required": FIRST_ASCENSION_REQUIRED_FAITH, "delta": -FIRST_ASCENSION_REQUIRED_FAITH},
+			{"scope": "global_resource", "key": "materials", "label": "材料", "required": FIRST_ASCENSION_REQUIRED_MATERIALS, "delta": -FIRST_ASCENSION_REQUIRED_MATERIALS},
+		],
+		"completion_effects": [],
+	}
+
+
+func _build_ascension_requirement_entry(requirement: Dictionary) -> Dictionary:
+	var current := _ascension_requirement_current(requirement)
+	var required := int(requirement.get("value", 0))
+	var op := str(requirement.get("op", ">="))
+	return {
+		"label": _ascension_requirement_label(requirement),
+		"current": current,
+		"required": required,
+		"op": op,
+		"met": _compare_int(current, required, op),
+	}
+
+
+func _ascension_cost_to_requirement(cost: Dictionary) -> Dictionary:
+	var requirement := cost.duplicate(true)
+	requirement["value"] = int(cost.get("required", abs(int(cost.get("delta", 0)))))
+	if not requirement.has("op"):
+		requirement["op"] = ">="
+	return requirement
+
+
+func _ascension_requirement_current(requirement: Dictionary) -> int:
+	match str(requirement.get("scope", "")):
+		"level":
+			return map_state.level
+		"route_affinity":
+			return int(map_state.route_affinity.get(str(requirement.get("route", "")), 0))
+		"global_resource":
+			return int(map_state.global_resources.get(str(requirement.get("key", "")), 0))
+		"inventory":
+			return int(map_state.inventory.get(str(requirement.get("item", "")), 0))
+		"secrecy_pressure":
+			return map_state.secrecy_pressure
+	return 0
+
+
+func _ascension_requirement_label(requirement: Dictionary) -> String:
+	if requirement.has("label"):
+		return str(requirement.get("label", ""))
+	match str(requirement.get("scope", "")):
+		"level":
+			return "等级"
+		"route_affinity":
+			return _route_short_name(str(requirement.get("route", "")))
+		"global_resource":
+			return _effect_resource_name(str(requirement.get("key", "")))
+		"inventory":
+			return _get_item_name(str(requirement.get("item", "")))
+		"secrecy_pressure":
+			return "追踪压力"
+	return str(requirement.get("scope", "条件"))
+
+
+func _format_ascension_requirement_gap(entry: Dictionary) -> String:
+	return "%s %s/%s" % [
+		str(entry.get("label", "")),
+		str(entry.get("current", 0)),
+		_ascension_requirement_target_text(entry),
+	]
+
+
+func _ascension_requirement_target_text(entry: Dictionary) -> String:
+	var op := str(entry.get("op", ">="))
+	var required := str(entry.get("required", 0))
+	match op:
+		"<=":
+			return "≤%s" % required
+		"<":
+			return "<%s" % required
+		">":
+			return ">%s" % required
+		"==":
+			return "=%s" % required
+	return required
+
+
+func _format_ascension_requirements(entries: Array) -> String:
+	var parts: Array[String] = []
+	for entry in entries:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		parts.append("%s %s/%s" % [
+			str(entry.get("label", "")),
+			str(entry.get("current", 0)),
+			_ascension_requirement_target_text(entry),
+		])
+	return "  ".join(parts)
+
+
+func _apply_ascension_costs(costs: Array) -> void:
+	for cost in costs:
+		if typeof(cost) != TYPE_DICTIONARY:
+			continue
+		var delta := int(cost.get("delta", 0))
+		match str(cost.get("scope", "")):
+			"global_resource":
+				map_state.change_global_resource(str(cost.get("key", "")), delta)
+			"inventory":
+				var item_id := str(cost.get("item", ""))
+				if delta < 0:
+					map_state.remove_item(item_id, abs(delta))
+				elif delta > 0:
+					map_state.add_item(item_id, delta)
+
+
+func _format_first_ascension_status(context: Dictionary) -> String:
+	if map_state.ascension_tier >= 1:
+		var finished_route := str(context.get("route", ""))
+		return "已完成：%s路线  权能牌：%s" % [
+			_route_short_name(finished_route),
+			_first_ascension_card_name(finished_route),
+		]
+	var route_id := str(context.get("route", ""))
+	return "%s路线 %s  权能牌：%s" % [
+		_route_short_name(route_id),
+		_format_ascension_requirements(context.get("requirements", [])),
+		str(context.get("unlock_card_name", "")),
+	]
+
+
+func _try_upgrade_route_power() -> void:
+	var result := _evaluate_route_power_upgrade_action()
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "权能强化条件不足。")))
+		_update_ui()
+		return
+	var route_id: String = map_state.ascension_route
+	var context := _build_route_power_upgrade_context(route_id)
+	var from_card_id := str(context.get("from_card_id", ""))
+	var to_card_id := str(context.get("to_card_id", ""))
+	if card_controller == null or not card_controller.replace_card_everywhere(from_card_id, to_card_id):
+		_log("权能强化失败：没有找到可强化的权能牌。")
+		_update_ui()
+		return
+	map_state.spend_action_points(int(context.get("action_point_cost", 1)))
+	_apply_ascension_costs(context.get("costs", []))
+	map_state.power_card_upgraded = true
+	_apply_stage_reward_effects(context.get("completion_effects", []))
+	_log("权能强化完成：%s被深化为%s。" % [
+		str(context.get("from_card_name", "")),
+		str(context.get("to_card_name", "")),
+	])
+	_update_after_map_change()
+
+
+func _evaluate_route_power_upgrade_action() -> Dictionary:
+	var route_id: String = map_state.ascension_route
+	var context := _build_route_power_upgrade_context(route_id)
+	var enabled := bool(context.get("ready", false))
+	var reason := ""
+	if map_state.ascension_tier < 1:
+		enabled = false
+		reason = "先完成第一次晋升"
+	elif context.is_empty():
+		enabled = false
+		reason = "没有可强化权能"
+	elif map_state.power_card_upgraded:
+		enabled = false
+		reason = "权能牌已强化"
+	elif not enabled:
+		reason = str(context.get("missing", "权能强化条件不足"))
+	elif not map_state.can_spend_action_points(int(context.get("action_point_cost", 1))):
+		enabled = false
+		reason = "行动点不足"
+	return {
+		"id": POWER_UPGRADE_ACTION_ID,
+		"label": str(context.get("name", "深化权能")),
+		"enabled": enabled,
+		"reason": reason,
+		"cost": int(context.get("action_point_cost", 1)),
+		"summary": _format_route_power_upgrade_status(context),
+	}
+
+
+func _build_route_power_upgrade_context(route_id: String) -> Dictionary:
+	if route_id.is_empty():
+		return {}
+	var upgrade_def := _get_route_power_upgrade_def(route_id)
+	if upgrade_def.is_empty():
+		return {}
+	var requirement_entries: Array = []
+	var missing_parts: Array[String] = []
+	for requirement in upgrade_def.get("requirements", []):
+		if typeof(requirement) != TYPE_DICTIONARY:
+			continue
+		var entry := _build_ascension_requirement_entry(requirement)
+		requirement_entries.append(entry)
+		if not bool(entry.get("met", false)):
+			missing_parts.append(_format_ascension_requirement_gap(entry))
+	for cost in upgrade_def.get("costs", []):
+		if typeof(cost) != TYPE_DICTIONARY:
+			continue
+		var cost_entry := _build_ascension_requirement_entry(_ascension_cost_to_requirement(cost))
+		requirement_entries.append(cost_entry)
+		if not bool(cost_entry.get("met", false)):
+			missing_parts.append(_format_ascension_requirement_gap(cost_entry))
+	var from_card_id := str(upgrade_def.get("from_card_id", ""))
+	var to_card_id := str(upgrade_def.get("to_card_id", ""))
+	var has_base_card := card_controller != null and card_controller.has_card_anywhere(from_card_id)
+	if not map_state.power_card_upgraded and not has_base_card:
+		missing_parts.append("初阶权能 0/1")
+	return {
+		"route": route_id,
+		"name": str(upgrade_def.get("name", "深化权能")),
+		"complete": map_state.power_card_upgraded,
+		"ready": map_state.ascension_tier >= 1 and not map_state.power_card_upgraded and missing_parts.is_empty(),
+		"missing": "；".join(missing_parts),
+		"requirements": requirement_entries,
+		"costs": upgrade_def.get("costs", []).duplicate(true),
+		"completion_effects": upgrade_def.get("completion_effects", []).duplicate(true),
+		"action_point_cost": int(upgrade_def.get("action_point_cost", 1)),
+		"from_card_id": from_card_id,
+		"to_card_id": to_card_id,
+		"from_card_name": _card_name(from_card_id),
+		"to_card_name": _card_name(to_card_id),
+		"action_id": POWER_UPGRADE_ACTION_ID,
+	}
+
+
+func _get_route_power_upgrade_def(route_id: String) -> Dictionary:
+	var ascension_def := _get_first_ascension_def(route_id)
+	var upgrade_def: Dictionary = ascension_def.get("power_upgrade", {})
+	return upgrade_def
+
+
+func _format_route_power_upgrade_status(context: Dictionary) -> String:
+	if context.is_empty():
+		return "暂无可强化权能"
+	if bool(context.get("complete", false)):
+		return "已强化：%s" % str(context.get("to_card_name", ""))
+	return "%s -> %s  %s" % [
+		str(context.get("from_card_name", "")),
+		str(context.get("to_card_name", "")),
+		_format_ascension_requirements(context.get("requirements", [])),
+	]
+
+
+func _grant_first_ascension_card(route_id: String) -> String:
+	if card_controller == null:
+		return ""
+	var card_id := _first_ascension_card_id(route_id)
+	if card_id.is_empty():
+		return ""
+	if not card_controller.grant_card_to_discard(card_id):
+		return ""
+	return _first_ascension_card_name(route_id)
+
+
+func _first_ascension_card_id(route_id: String) -> String:
+	var ascension_def := _get_first_ascension_def(route_id)
+	return str(ascension_def.get("unlock_card_id", FIRST_ASCENSION_ROUTE_CARD_IDS.get(route_id, "")))
+
+
+func _first_ascension_card_name(route_id: String) -> String:
+	var card_id := _first_ascension_card_id(route_id)
+	if card_id.is_empty():
+		return "未知权能"
+	return _card_name(card_id)
 
 
 func _build_stage_node_snapshot() -> Array:
@@ -1434,11 +2106,14 @@ func _format_route_bonus_status(previews: Array) -> String:
 		if typeof(preview) != TYPE_DICTIONARY:
 			continue
 		var prefix := "已解锁" if bool(preview.get("active", false)) else "未解锁"
-		parts.append("%s %s %s/%s：%s" % [
+		var threshold_modifier := int(preview.get("threshold_modifier", 0))
+		var modifier_text := "" if threshold_modifier == 0 else "（阈值 %s）" % _signed_int(threshold_modifier)
+		parts.append("%s %s %s/%s%s：%s" % [
 			prefix,
 			str(preview.get("route_name", "")),
 			str(preview.get("current", 0)),
 			str(preview.get("threshold", 0)),
+			modifier_text,
 			str(preview.get("summary", "")),
 		])
 	return "；".join(parts)
@@ -1513,7 +2188,10 @@ func _summarize_item_effect(effect: Dictionary) -> String:
 			var prefix := "移除状态" if op == "remove" else "地块状态"
 			return "%s：%s" % [prefix, _state_name(str(effect.get("state", "")))]
 		"card_discard":
-			return "获得卡牌：%s" % _card_name(str(effect.get("card_id", "")))
+			var card_id := str(effect.get("card_id", ""))
+			if _card_type(card_id) == "污染":
+				return "污染牌：%s" % _card_name(card_id)
+			return "获得卡牌：%s" % _card_name(card_id)
 		"inventory":
 			return "%s %s" % [_get_item_name(str(effect.get("item", ""))), _signed_int(delta)]
 		"log":
@@ -1532,6 +2210,8 @@ func _summarize_effect(effect: Dictionary) -> String:
 			var op := str(effect.get("op", "add"))
 			var prefix := "移除状态" if op == "remove" else "地块状态"
 			return "%s：%s" % [prefix, _state_name(str(effect.get("state", "")))]
+		"route_bonus_threshold":
+			return "%s加成阈值 %s" % [_effect_route_name(str(effect.get("route", ""))), _signed_int(int(effect.get("value", 0)))]
 		"add_card_to_discard":
 			return "污染牌：%s" % _card_name(str(effect.get("card_id", "")))
 		"log":
@@ -1596,6 +2276,30 @@ func _effect_route_name(route_id: String) -> String:
 	return route_id
 
 
+func _route_short_name(route_id: String) -> String:
+	match route_id:
+		"life":
+			return "生命"
+		"faith":
+			return "信仰"
+		"death":
+			return "死亡"
+		"secret":
+			return "隐秘"
+	return route_id
+
+
+func _dominant_route_id() -> String:
+	var best_route := "life"
+	var best_value := -1
+	for route_id in ["life", "faith", "death", "secret"]:
+		var value := int(map_state.route_affinity.get(route_id, 0))
+		if value > best_value:
+			best_route = route_id
+			best_value = value
+	return best_route
+
+
 func _state_name(state_id: String) -> String:
 	return str(state_defs.get(state_id, {}).get("name", state_id))
 
@@ -1604,6 +2308,12 @@ func _card_name(card_id: String) -> String:
 	if card_controller == null:
 		return card_id
 	return str(card_controller.get_card_def(card_id).get("name", card_id))
+
+
+func _card_type(card_id: String) -> String:
+	if card_controller == null:
+		return ""
+	return str(card_controller.get_card_def(card_id).get("type", ""))
 
 
 func _signed_int(value: int) -> String:

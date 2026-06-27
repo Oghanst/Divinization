@@ -1,0 +1,434 @@
+[
+  {
+    "id": "life",
+    "name": "生命初阶仪式",
+    "route_name": "生命",
+    "description": "以药草、见证和信仰稳住肉身，让神性第一次从治疗中成形。",
+    "action_point_cost": 2,
+    "unlock_card_id": "ascend_life_benediction",
+    "requirements": [
+      {
+        "scope": "level",
+        "label": "等级",
+        "value": 2
+      },
+      {
+        "scope": "route_affinity",
+        "route": "life",
+        "label": "生命",
+        "value": 5
+      },
+      {
+        "scope": "global_resource",
+        "key": "followers",
+        "label": "信徒",
+        "value": 4
+      }
+    ],
+    "costs": [
+      {
+        "scope": "global_resource",
+        "key": "faith",
+        "label": "信仰",
+        "required": 6,
+        "delta": -6
+      },
+      {
+        "scope": "global_resource",
+        "key": "materials",
+        "label": "材料",
+        "required": 2,
+        "delta": -2
+      },
+      {
+        "scope": "inventory",
+        "item": "medicinal_herb_bundle",
+        "label": "药草束",
+        "required": 1,
+        "delta": -1
+      }
+    ],
+    "completion_effects": [
+      {
+        "scope": "player_life",
+        "delta": 2
+      },
+      {
+        "scope": "route_bonus_threshold",
+        "route": "life",
+        "delta": -1
+      },
+      {
+        "scope": "log",
+        "text": "药草与祈祷在你的掌心合成第一枚生命印记。"
+      }
+    ],
+    "power_upgrade": {
+      "name": "深化生息赐福",
+      "action_point_cost": 1,
+      "from_card_id": "ascend_life_benediction",
+      "to_card_id": "ascend_life_benediction_II",
+      "requirements": [
+        {
+          "scope": "route_affinity",
+          "route": "life",
+          "label": "生命",
+          "value": 6
+        }
+      ],
+      "costs": [
+        {
+          "scope": "global_resource",
+          "key": "faith",
+          "label": "信仰",
+          "required": 2,
+          "delta": -2
+        },
+        {
+          "scope": "global_resource",
+          "key": "materials",
+          "label": "材料",
+          "required": 1,
+          "delta": -1
+        }
+      ],
+      "completion_effects": [
+        {
+          "scope": "route_affinity",
+          "route": "life",
+          "delta": 1
+        },
+        {
+          "scope": "log",
+          "text": "生息赐福被深化为复苏权能，救治开始转化为稳定见证。"
+        }
+      ]
+    }
+  },
+  {
+    "id": "faith",
+    "name": "信仰初阶仪式",
+    "route_name": "信仰",
+    "description": "把圣物碎片嵌入锚点，让信众的祈祷固定成可回应的形体。",
+    "action_point_cost": 2,
+    "unlock_card_id": "ascend_faith_sigil",
+    "requirements": [
+      {
+        "scope": "level",
+        "label": "等级",
+        "value": 2
+      },
+      {
+        "scope": "route_affinity",
+        "route": "faith",
+        "label": "信仰",
+        "value": 5
+      },
+      {
+        "scope": "global_resource",
+        "key": "followers",
+        "label": "信徒",
+        "value": 5
+      }
+    ],
+    "costs": [
+      {
+        "scope": "global_resource",
+        "key": "faith",
+        "label": "信仰",
+        "required": 6,
+        "delta": -6
+      },
+      {
+        "scope": "global_resource",
+        "key": "materials",
+        "label": "材料",
+        "required": 2,
+        "delta": -2
+      },
+      {
+        "scope": "inventory",
+        "item": "relic_fragment",
+        "label": "圣物碎片",
+        "required": 1,
+        "delta": -1
+      }
+    ],
+    "completion_effects": [
+      {
+        "scope": "global_resource",
+        "key": "followers",
+        "delta": 1
+      },
+      {
+        "scope": "route_bonus_threshold",
+        "route": "faith",
+        "delta": -1
+      },
+      {
+        "scope": "log",
+        "text": "圣物碎片嵌入锚点，祈祷第一次像潮水一样回流。"
+      }
+    ],
+    "power_upgrade": {
+      "name": "深化铸造圣印",
+      "action_point_cost": 1,
+      "from_card_id": "ascend_faith_sigil",
+      "to_card_id": "ascend_faith_sigil_II",
+      "requirements": [
+        {
+          "scope": "route_affinity",
+          "route": "faith",
+          "label": "信仰",
+          "value": 6
+        }
+      ],
+      "costs": [
+        {
+          "scope": "global_resource",
+          "key": "faith",
+          "label": "信仰",
+          "required": 2,
+          "delta": -2
+        },
+        {
+          "scope": "global_resource",
+          "key": "materials",
+          "label": "材料",
+          "required": 1,
+          "delta": -1
+        }
+      ],
+      "completion_effects": [
+        {
+          "scope": "route_affinity",
+          "route": "faith",
+          "delta": 1
+        },
+        {
+          "scope": "log",
+          "text": "铸造圣印被深化为群祷权能，信徒开始围绕锚点组织祈祷。"
+        }
+      ]
+    }
+  },
+  {
+    "id": "death",
+    "name": "死亡初阶仪式",
+    "route_name": "死亡",
+    "description": "保留一份疫病残材，借死者和病灶之间的边界触碰死亡权柄。",
+    "action_point_cost": 2,
+    "unlock_card_id": "ascend_death_breath",
+    "requirements": [
+      {
+        "scope": "level",
+        "label": "等级",
+        "value": 2
+      },
+      {
+        "scope": "route_affinity",
+        "route": "death",
+        "label": "死亡",
+        "value": 5
+      },
+      {
+        "scope": "global_resource",
+        "key": "followers",
+        "label": "信徒",
+        "value": 3
+      }
+    ],
+    "costs": [
+      {
+        "scope": "global_resource",
+        "key": "faith",
+        "label": "信仰",
+        "required": 4,
+        "delta": -4
+      },
+      {
+        "scope": "global_resource",
+        "key": "materials",
+        "label": "材料",
+        "required": 3,
+        "delta": -3
+      },
+      {
+        "scope": "inventory",
+        "item": "plague_residue",
+        "label": "疫病残材",
+        "required": 1,
+        "delta": -1
+      }
+    ],
+    "completion_effects": [
+      {
+        "scope": "card_resource",
+        "key": "sanity",
+        "delta": -1
+      },
+      {
+        "scope": "route_bonus_threshold",
+        "route": "death",
+        "delta": -1
+      },
+      {
+        "scope": "log",
+        "text": "疫病残材在仪式中化作冷雾，死亡权柄第一次回应你。"
+      }
+    ],
+    "power_upgrade": {
+      "name": "深化亡者借息",
+      "action_point_cost": 1,
+      "from_card_id": "ascend_death_breath",
+      "to_card_id": "ascend_death_breath_II",
+      "requirements": [
+        {
+          "scope": "route_affinity",
+          "route": "death",
+          "label": "死亡",
+          "value": 6
+        }
+      ],
+      "costs": [
+        {
+          "scope": "global_resource",
+          "key": "faith",
+          "label": "信仰",
+          "required": 2,
+          "delta": -2
+        },
+        {
+          "scope": "global_resource",
+          "key": "materials",
+          "label": "材料",
+          "required": 1,
+          "delta": -1
+        }
+      ],
+      "completion_effects": [
+        {
+          "scope": "route_affinity",
+          "route": "death",
+          "delta": 1
+        },
+        {
+          "scope": "log",
+          "text": "亡者借息被深化为寒潮权能，死亡回应开始压住更多病灶。"
+        }
+      ]
+    }
+  },
+  {
+    "id": "secret",
+    "name": "隐秘初阶仪式",
+    "route_name": "隐秘",
+    "description": "以异常线索和被抹去的名字遮住自身，让神性从未知中成形。",
+    "action_point_cost": 2,
+    "unlock_card_id": "ascend_secret_veil",
+    "requirements": [
+      {
+        "scope": "level",
+        "label": "等级",
+        "value": 2
+      },
+      {
+        "scope": "route_affinity",
+        "route": "secret",
+        "label": "隐秘",
+        "value": 5
+      },
+      {
+        "scope": "global_resource",
+        "key": "followers",
+        "label": "信徒",
+        "value": 4
+      },
+      {
+        "scope": "secrecy_pressure",
+        "label": "追踪压力",
+        "op": "<=",
+        "value": 4
+      }
+    ],
+    "costs": [
+      {
+        "scope": "global_resource",
+        "key": "faith",
+        "label": "信仰",
+        "required": 6,
+        "delta": -6
+      },
+      {
+        "scope": "global_resource",
+        "key": "materials",
+        "label": "材料",
+        "required": 2,
+        "delta": -2
+      },
+      {
+        "scope": "inventory",
+        "item": "suspicious_clue",
+        "label": "异常线索",
+        "required": 2,
+        "delta": -1
+      }
+    ],
+    "completion_effects": [
+      {
+        "scope": "secrecy_pressure",
+        "delta": -2
+      },
+      {
+        "scope": "route_bonus_threshold",
+        "route": "secret",
+        "delta": -1
+      },
+      {
+        "scope": "log",
+        "text": "异常线索被烧成灰，你的名字在追踪者记忆中后退了一步。"
+      }
+    ],
+    "power_upgrade": {
+      "name": "深化无名帷幕",
+      "action_point_cost": 1,
+      "from_card_id": "ascend_secret_veil",
+      "to_card_id": "ascend_secret_veil_II",
+      "requirements": [
+        {
+          "scope": "route_affinity",
+          "route": "secret",
+          "label": "隐秘",
+          "value": 6
+        }
+      ],
+      "costs": [
+        {
+          "scope": "global_resource",
+          "key": "faith",
+          "label": "信仰",
+          "required": 2,
+          "delta": -2
+        },
+        {
+          "scope": "global_resource",
+          "key": "materials",
+          "label": "材料",
+          "required": 1,
+          "delta": -1
+        }
+      ],
+      "completion_effects": [
+        {
+          "scope": "route_affinity",
+          "route": "secret",
+          "delta": 1
+        },
+        {
+          "scope": "log",
+          "text": "无名帷幕被深化为匿名权能，你开始遮蔽追踪者的记忆本身。"
+        }
+      ]
+    }
+  }
+]

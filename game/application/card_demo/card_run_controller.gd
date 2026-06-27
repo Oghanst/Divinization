@@ -224,6 +224,38 @@ func grant_card_to_discard(card_id: String) -> bool:
 	return true
 
 
+func replace_card_everywhere(from_card_id: String, to_card_id: String) -> bool:
+	if from_card_id.is_empty() or to_card_id.is_empty() or not card_defs.has(to_card_id):
+		return false
+	var changed := false
+	changed = _replace_card_ids(persistent_deck, from_card_id, to_card_id) or changed
+	changed = _replace_card_ids(deck, from_card_id, to_card_id) or changed
+	changed = _replace_card_ids(hand, from_card_id, to_card_id) or changed
+	changed = _replace_card_ids(discard, from_card_id, to_card_id) or changed
+	if changed:
+		_log("升级卡牌：%s -> %s" % [
+			str(get_card_def(from_card_id).get("name", from_card_id)),
+			str(get_card_def(to_card_id).get("name", to_card_id)),
+		])
+		_emit_state()
+	return changed
+
+
+func has_card_anywhere(card_id: String) -> bool:
+	if card_id.is_empty():
+		return false
+	return persistent_deck.has(card_id) or deck.has(card_id) or hand.has(card_id) or discard.has(card_id)
+
+
+func _replace_card_ids(cards: Array, from_card_id: String, to_card_id: String) -> bool:
+	var changed := false
+	for i in range(cards.size()):
+		if str(cards[i]) == from_card_id:
+			cards[i] = to_card_id
+			changed = true
+	return changed
+
+
 func has_pending_event() -> bool:
 	return not pending_event.is_empty()
 

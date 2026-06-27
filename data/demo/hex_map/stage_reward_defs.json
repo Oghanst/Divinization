@@ -3,6 +3,12 @@
     "id": "village_gratitude_followers",
     "name": "感激的信众",
     "description": "救下或稳住病村后，一批村民愿意追随你的神名。",
+    "rarity": "common",
+    "weight": 25,
+    "route_tags": [
+      "life",
+      "faith"
+    ],
     "result_ids": [
       "resolve_cleanse_plague",
       "resolve_prayer_circle",
@@ -32,6 +38,11 @@
     "id": "weak_heal_card_reward",
     "name": "治愈神术",
     "description": "把一张微弱治愈加入弃牌堆，并强化生命路线倾向。",
+    "rarity": "uncommon",
+    "weight": 20,
+    "route_tags": [
+      "life"
+    ],
     "result_ids": [
       "resolve_cleanse_plague",
       "resolve_prayer_circle",
@@ -59,9 +70,44 @@
     ]
   },
   {
+    "id": "village_medicine_cache",
+    "name": "村中药库",
+    "description": "救下病村后，村民交出还能使用的药草和治疗记录。",
+    "rarity": "common",
+    "weight": 16,
+    "route_tags": [
+      "life"
+    ],
+    "result_ids": [
+      "resolve_cleanse_plague",
+      "resolve_sanctify_graves"
+    ],
+    "effects": [
+      {
+        "scope": "inventory",
+        "item": "medicinal_herb_bundle",
+        "delta": 1
+      },
+      {
+        "scope": "card_progress",
+        "key": "cure_progress",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "村民把剩下的药草与治疗记录交给你，下一次救治会更从容。"
+      }
+    ]
+  },
+  {
     "id": "anchor_relic_fragment",
     "name": "锚点圣物",
     "description": "获得圣物碎片，并让信仰锚点更稳固。",
+    "rarity": "uncommon",
+    "weight": 18,
+    "route_tags": [
+      "faith"
+    ],
     "result_ids": [
       "resolve_prayer_circle",
       "resolve_death_authority",
@@ -96,6 +142,11 @@
     "id": "source_name_fragment",
     "name": "病源真名残片",
     "description": "获得异常线索，并推进病源判断与隐秘路线。",
+    "rarity": "uncommon",
+    "weight": 18,
+    "route_tags": [
+      "secret"
+    ],
     "result_ids": [
       "resolve_cleanse_plague",
       "resolve_hidden_escape",
@@ -127,9 +178,53 @@
     ]
   },
   {
+    "id": "forbidden_name_insight",
+    "name": "禁忌真名洞见",
+    "description": "夺走一段更完整的真名知识，获得强隐秘成长，但污染牌会进入牌组。",
+    "rarity": "rare",
+    "weight": 28,
+    "route_tags": [
+      "secret"
+    ],
+    "result_ids": [
+      "resolve_claim_source_name",
+      "resolve_hidden_escape"
+    ],
+    "effects": [
+      {
+        "scope": "inventory",
+        "item": "suspicious_clue",
+        "delta": 1
+      },
+      {
+        "scope": "route_affinity",
+        "route": "secret",
+        "delta": 2
+      },
+      {
+        "scope": "route_bonus_threshold",
+        "route": "secret",
+        "delta": -1
+      },
+      {
+        "scope": "card_discard",
+        "card_id": "fever_dream"
+      },
+      {
+        "scope": "log",
+        "text": "你记住了更完整的真名片段。它会帮你藏身，也会在梦里发热。"
+      }
+    ]
+  },
+  {
     "id": "death_whisper_card_reward",
     "name": "死者低语",
     "description": "把死亡转移加入弃牌堆，并强化死亡路线倾向。",
+    "rarity": "uncommon",
+    "weight": 20,
+    "route_tags": [
+      "death"
+    ],
     "result_ids": [
       "resolve_death_authority",
       "resolve_plague_failure",
@@ -158,6 +253,12 @@
     "id": "plague_salvage_materials",
     "name": "疫病残材",
     "description": "从失控或转化的疫病中带走可用于仪式的材料。",
+    "rarity": "common",
+    "weight": 12,
+    "route_tags": [
+      "death",
+      "secret"
+    ],
     "result_ids": [
       "resolve_death_authority",
       "resolve_hidden_escape",
@@ -176,7 +277,7 @@
       },
       {
         "scope": "inventory",
-        "item": "medicinal_herb_bundle",
+        "item": "plague_residue",
         "delta": 1
       },
       {

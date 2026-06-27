@@ -10,6 +10,9 @@ var life: int = 8
 var max_life: int = 10
 var experience: int = 0
 var level: int = 1
+var ascension_tier: int = 0
+var ascension_route: String = ""
+var power_card_upgraded: bool = false
 var inventory: Dictionary = {}
 var sanity_status: String = "稳定"
 var secrecy_status: String = "隐匿"
@@ -40,6 +43,8 @@ var global_resources := {
 	"faith": 4,
 	"materials": 1,
 	"followers": 3,
+	"cult_cells": 0,
+	"apostles": 0,
 }
 var event_key: String = "plague_outbreak"
 var event_countdown: int = 6
@@ -112,6 +117,16 @@ func gain_experience(amount: int) -> void:
 	while experience >= level * 5:
 		experience -= level * 5
 		level += 1
+
+
+func complete_first_ascension(route_id: String) -> void:
+	if ascension_tier >= 1:
+		return
+	ascension_tier = 1
+	ascension_route = route_id
+	level = max(level, 2)
+	max_life += 2
+	heal(2)
 
 
 func change_route_affinity(route_id: String, delta: int) -> void:

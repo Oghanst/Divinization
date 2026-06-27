@@ -28,7 +28,7 @@
     "name": "微弱治愈",
     "type": "神迹",
     "cost": 1,
-    "text": "消耗灵性缓解一名病人的痛苦，换来第一批见证。",
+    "text": "消耗灵性缓解一名病人的痛苦，换来第一批见证，并让生命回应更容易成形。",
     "requirements": [
       {
         "scope": "resource",
@@ -64,8 +64,13 @@
         "value": 1
       },
       {
+        "kind": "route_bonus_threshold",
+        "route": "life",
+        "value": -1
+      },
+      {
         "kind": "log",
-        "text": "退烧的人开始低声谈论你的名字。"
+        "text": "退烧的人开始低声谈论你的名字，生命权柄也更容易回应照护。"
       }
     ],
     "art": "res://assets/generated/card_demo/art/weak_heal.png"
@@ -170,7 +175,7 @@
     "name": "隐藏踪迹",
     "type": "行动",
     "cost": 1,
-    "text": "抹去异常痕迹，降低审判官和修士的注意。",
+    "text": "抹去异常痕迹，降低审判官和修士的注意，并让隐秘回应更容易成形。",
     "effects": [
       {
         "kind": "resource",
@@ -183,8 +188,13 @@
         "value": -1
       },
       {
+        "kind": "route_bonus_threshold",
+        "route": "secret",
+        "value": -1
+      },
+      {
         "kind": "log",
-        "text": "你让所有奇迹看起来都像巧合。"
+        "text": "你让所有奇迹看起来都像巧合，也为后续遮蔽回应铺好路径。"
       }
     ],
     "art": "res://assets/generated/card_demo/art/hide_tracks.png"
@@ -194,7 +204,7 @@
     "name": "小型仪式",
     "type": "仪式",
     "cost": 2,
-    "text": "以材料和信仰举行小仪式，制造锚点雏形。",
+    "text": "以材料和信仰举行小仪式，制造锚点雏形，并让信仰回应更容易成形。",
     "requirements": [
       {
         "scope": "resource",
@@ -231,8 +241,13 @@
         "value": 1
       },
       {
+        "kind": "route_bonus_threshold",
+        "route": "faith",
+        "value": -1
+      },
+      {
         "kind": "log",
-        "text": "村庄某处留下了无法解释的微弱圣痕。"
+        "text": "村庄某处留下了无法解释的微弱圣痕，祈祷与锚点回应都更容易被你接住。"
       }
     ],
     "art": "res://assets/generated/card_demo/art/small_ritual.png"
@@ -242,7 +257,7 @@
     "name": "转移疫病",
     "type": "死亡",
     "cost": 2,
-    "text": "将一部分疫病导入死物，换取死亡权柄的回响。",
+    "text": "将一部分疫病导入死物，换取死亡权柄的回响，并让死亡回应更容易成形。",
     "requirements": [
       {
         "scope": "progress",
@@ -285,8 +300,13 @@
         "value": 2
       },
       {
+        "kind": "route_bonus_threshold",
+        "route": "death",
+        "value": -1
+      },
+      {
         "kind": "log",
-        "text": "死者安静了，活人却开始害怕你的慈悲。"
+        "text": "死者安静了，活人却开始害怕你的慈悲，死亡权柄也更容易接住后续预兆。"
       }
     ],
     "art": "res://assets/generated/card_demo/art/death_transfer.png"
@@ -319,6 +339,346 @@
       }
     ],
     "art": "res://assets/generated/card_demo/art/calm_villagers.png"
+  },
+  {
+    "id": "ascend_life_benediction",
+    "name": "生息赐福",
+    "type": "权能",
+    "cost": 2,
+    "text": "第一次晋升后获得的生命权能。以温和神迹稳住病人，并把照护转化为见证。",
+    "requirements": [
+      {
+        "scope": "resource",
+        "key": "will",
+        "op": ">=",
+        "value": 1
+      }
+    ],
+    "effects": [
+      {
+        "kind": "resource",
+        "key": "will",
+        "value": -1
+      },
+      {
+        "kind": "resource",
+        "key": "faith",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "cure_progress",
+        "value": 2
+      },
+      {
+        "kind": "progress",
+        "key": "witness",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "life_route",
+        "value": 1
+      },
+      {
+        "kind": "log",
+        "text": "病人的呼吸稳定下来，旁观者第一次把你称作庇护者。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/weak_heal.png"
+  },
+  {
+    "id": "ascend_faith_sigil",
+    "name": "铸造圣印",
+    "type": "权能",
+    "cost": 2,
+    "text": "第一次晋升后获得的信仰权能。用材料凝成圣印，让祈祷拥有可依附的形体。",
+    "requirements": [
+      {
+        "scope": "resource",
+        "key": "materials",
+        "op": ">=",
+        "value": 1
+      }
+    ],
+    "effects": [
+      {
+        "kind": "resource",
+        "key": "materials",
+        "value": -1
+      },
+      {
+        "kind": "resource",
+        "key": "followers",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "anchor_progress",
+        "value": 2
+      },
+      {
+        "kind": "route_bonus_threshold",
+        "route": "faith",
+        "value": -1
+      },
+      {
+        "kind": "log",
+        "text": "粗糙的圣印亮起一瞬，信众终于有了能触碰的凭证。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/small_ritual.png"
+  },
+  {
+    "id": "ascend_death_breath",
+    "name": "亡者借息",
+    "type": "权能",
+    "cost": 2,
+    "text": "第一次晋升后获得的死亡权能。借死者余息压下疫病，但理智会被寒意磨损。",
+    "requirements": [
+      {
+        "scope": "resource",
+        "key": "sanity",
+        "op": ">=",
+        "value": 1
+      }
+    ],
+    "effects": [
+      {
+        "kind": "resource",
+        "key": "sanity",
+        "value": -1
+      },
+      {
+        "kind": "progress",
+        "key": "infection",
+        "value": -2
+      },
+      {
+        "kind": "progress",
+        "key": "source_clues",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "death_route",
+        "value": 2
+      },
+      {
+        "kind": "log",
+        "text": "死者替你吐出一口寒雾，病灶短暂沉默。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/death_transfer.png"
+  },
+  {
+    "id": "ascend_secret_veil",
+    "name": "无名帷幕",
+    "type": "权能",
+    "cost": 1,
+    "text": "第一次晋升后获得的隐秘权能。让一个异常从所有人的记忆边缘滑落，并留下更深的线索。",
+    "effects": [
+      {
+        "kind": "resource",
+        "key": "exposure",
+        "value": -2
+      },
+      {
+        "kind": "progress",
+        "key": "source_clues",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "secret_route",
+        "value": 1
+      },
+      {
+        "kind": "route_bonus_threshold",
+        "route": "secret",
+        "value": -1
+      },
+      {
+        "kind": "log",
+        "text": "你把自己的名字藏进沉默里，只留下可供追索的裂隙。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/hide_tracks.png"
+  },
+  {
+    "id": "ascend_life_benediction_II",
+    "name": "生息赐福·复苏",
+    "type": "权能",
+    "cost": 2,
+    "text": "深化后的生命权能。把一次救治变成可传播的复苏见证。",
+    "requirements": [
+      {
+        "scope": "resource",
+        "key": "will",
+        "op": ">=",
+        "value": 1
+      }
+    ],
+    "effects": [
+      {
+        "kind": "resource",
+        "key": "will",
+        "value": -1
+      },
+      {
+        "kind": "resource",
+        "key": "faith",
+        "value": 2
+      },
+      {
+        "kind": "progress",
+        "key": "cure_progress",
+        "value": 3
+      },
+      {
+        "kind": "progress",
+        "key": "witness",
+        "value": 2
+      },
+      {
+        "kind": "progress",
+        "key": "life_route",
+        "value": 2
+      },
+      {
+        "kind": "route_bonus_threshold",
+        "route": "life",
+        "value": -1
+      },
+      {
+        "kind": "log",
+        "text": "被救下的人开始照护其他病人，生命权柄从个体扩散成见证。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/weak_heal.png"
+  },
+  {
+    "id": "ascend_faith_sigil_II",
+    "name": "铸造圣印·群祷",
+    "type": "权能",
+    "cost": 2,
+    "text": "深化后的信仰权能。圣印不再只是锚点，而能组织第一批稳定祈祷。",
+    "requirements": [
+      {
+        "scope": "resource",
+        "key": "materials",
+        "op": ">=",
+        "value": 1
+      }
+    ],
+    "effects": [
+      {
+        "kind": "resource",
+        "key": "materials",
+        "value": -1
+      },
+      {
+        "kind": "resource",
+        "key": "followers",
+        "value": 2
+      },
+      {
+        "kind": "progress",
+        "key": "anchor_progress",
+        "value": 3
+      },
+      {
+        "kind": "route_bonus_threshold",
+        "route": "faith",
+        "value": -1
+      },
+      {
+        "kind": "log",
+        "text": "圣印被传递到更多人手中，祈祷开始形成稳定回路。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/small_ritual.png"
+  },
+  {
+    "id": "ascend_death_breath_II",
+    "name": "亡者借息·寒潮",
+    "type": "权能",
+    "cost": 2,
+    "text": "深化后的死亡权能。借一阵死寒压住疫病，也逼出病源残响。",
+    "requirements": [
+      {
+        "scope": "resource",
+        "key": "sanity",
+        "op": ">=",
+        "value": 1
+      }
+    ],
+    "effects": [
+      {
+        "kind": "resource",
+        "key": "sanity",
+        "value": -1
+      },
+      {
+        "kind": "progress",
+        "key": "infection",
+        "value": -3
+      },
+      {
+        "kind": "progress",
+        "key": "source_clues",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "death_route",
+        "value": 3
+      },
+      {
+        "kind": "route_bonus_threshold",
+        "route": "death",
+        "value": -1
+      },
+      {
+        "kind": "log",
+        "text": "寒意穿过病灶，死者替你指出仍在发热的源头。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/death_transfer.png"
+  },
+  {
+    "id": "ascend_secret_veil_II",
+    "name": "无名帷幕·匿名",
+    "type": "权能",
+    "cost": 1,
+    "text": "深化后的隐秘权能。遮住异常，也遮住注视异常的人。",
+    "effects": [
+      {
+        "kind": "resource",
+        "key": "exposure",
+        "value": -3
+      },
+      {
+        "kind": "progress",
+        "key": "source_clues",
+        "value": 2
+      },
+      {
+        "kind": "progress",
+        "key": "secret_route",
+        "value": 2
+      },
+      {
+        "kind": "route_bonus_threshold",
+        "route": "secret",
+        "value": -1
+      },
+      {
+        "kind": "log",
+        "text": "你让追踪者忘记自己为何追踪，只剩线索在暗处发亮。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/hide_tracks.png"
   },
   {
     "id": "fever_dream",
