@@ -309,7 +309,18 @@ func _update_map_actions() -> void:
 	if map_status_label == null or map_actions_grid == null:
 		return
 	var resources: Dictionary = map_snapshot.get("global_resources", {})
-	map_status_label.text = "地图 AP %s/%s  生命 %s/%s\n信仰 %s  材料 %s  信徒 %s\n位置 %s" % [
+	var stage_text := "最终事件处理中" if bool(map_snapshot.get("crisis_active", false)) else str(map_snapshot.get("event_summary", ""))
+	var pending_event: Dictionary = map_snapshot.get("pending_event", {})
+	if not pending_event.is_empty():
+		var options: Array[String] = ["放任"]
+		if not pending_event.get("handled_effects", []).is_empty():
+			options.append("处理")
+		if not pending_event.get("converted_effects", []).is_empty():
+			options.append("转化")
+		if not pending_event.get("exploited_effects", []).is_empty():
+			options.append("利用")
+		stage_text += "\n预兆：%s（%s）" % [str(pending_event.get("name", "")), " / ".join(options)]
+	map_status_label.text = "地图 AP %s/%s  生命 %s/%s\n信仰 %s  材料 %s  信徒 %s\n位置 %s\n%s" % [
 		str(map_snapshot.get("action_points", 0)),
 		str(map_snapshot.get("max_action_points", 0)),
 		str(map_snapshot.get("life", 0)),
@@ -318,6 +329,7 @@ func _update_map_actions() -> void:
 		str(resources.get("materials", 0)),
 		str(resources.get("followers", 0)),
 		str(map_snapshot.get("player_coord", Vector2i.ZERO)),
+		stage_text,
 	]
 	_refresh_inventory_popup()
 	for child in map_actions_grid.get_children():

@@ -4,6 +4,7 @@ class_name CardRunController
 signal state_changed(snapshot: Dictionary)
 signal log_added(message: String)
 signal encounter_finished(result: Dictionary)
+signal effects_applied(effects: Array, source: Dictionary)
 
 const CARDS_PATH := "res://data/demo/card_demo/cards.json"
 const ENCOUNTERS_PATH := "res://data/demo/card_demo/encounters.json"
@@ -17,6 +18,7 @@ var progress: Dictionary = {}
 var deck: Array = []
 var hand: Array = []
 var discard: Array = []
+var pending_event: Dictionary = {}
 var log_messages: Array[String] = []
 var rng := RandomNumberGenerator.new()
 
@@ -38,6 +40,7 @@ func start_demo(encounter_id: String = "sick_village") -> void:
 	deck = current_encounter.get("starting_deck", []).duplicate(true)
 	hand.clear()
 	discard.clear()
+	pending_event.clear()
 	log_messages.clear()
 	final_result.clear()
 	turn = 1
@@ -49,6 +52,7 @@ func start_demo(encounter_id: String = "sick_village") -> void:
 	deck.shuffle()
 	_log("关卡开始：" + str(current_encounter.get("name", encounter_id)))
 	_log(str(current_encounter.get("description", "")))
+	_queue_turn_event()
 	_draw_new_hand()
 	_emit_state()
 
@@ -67,7 +71,11 @@ func play_card(hand_index: int) -> bool:
 	resources["action_points"] = int(resources.get("action_points", 0)) - int(card.get("cost", 0))
 	hand.remove_at(hand_index)
 	_log("打出卡牌：" + str(card.get("name", card_id)))
-	_apply_effects(card.get("effects", []))
+	_apply_effects(card.get("effects", []), {
+		"type": "card",
+		"id": card_id,
+		"name": str(card.get("name", card_id)),
+	})
 	if not bool(card.get("exhaust", false)):
 		discard.append(card_id)
 	_emit_state()
@@ -90,13 +98,14 @@ func end_turn() -> void:
 	for card_id in hand:
 		discard.append(card_id)
 	hand.clear()
+	resolve_pending_event("ignored")
 	countdown -= 1
 	if countdown <= 0:
 		resolve_final_event()
 		return
 	turn += 1
 	resources["action_points"] = max_action_points
-	_trigger_turn_event()
+	_queue_turn_event()
 	_draw_new_hand()
 	_emit_state()
 
@@ -117,7 +126,11 @@ func resolve_final_event() -> Dictionary:
 		}
 	_log("最终事件：" + str(current_encounter.get("final_event", "最终事件")))
 	_log(str(final_result.get("name", "结局")) + "：" + str(final_result.get("text", "")))
-	_apply_effects(final_result.get("rewards", []))
+	_apply_effects(final_result.get("rewards", []), {
+		"type": "final_event",
+		"id": str(final_result.get("id", "")),
+		"name": str(final_result.get("name", "")),
+	})
 	_emit_state()
 	encounter_finished.emit(final_result)
 	return final_result
@@ -138,6 +151,7 @@ func get_snapshot() -> Dictionary:
 		"progress": progress.duplicate(true),
 		"deck_count": deck.size(),
 		"discard_count": discard.size(),
+		"pending_event": pending_event.duplicate(true),
 		"hand": hand_cards,
 		"log": log_messages.duplicate(),
 		"is_finished": is_finished,
@@ -153,6 +167,46 @@ func get_card_def(card_id: String) -> Dictionary:
 		"cost": 0,
 		"text": "Missing card definition."
 	})
+
+
+func sync_resources(values: Dictionary) -> void:
+	var changed := false
+	for key in values.keys():
+		var resource_key := str(key)
+		var next_value: int = max(0, int(values.get(key, 0)))
+		if int(resources.get(resource_key, 0)) == next_value:
+			continue
+		resources[resource_key] = next_value
+		changed = true
+	if changed:
+		_emit_state()
+
+
+func has_pending_event() -> bool:
+	return not pending_event.is_empty()
+
+
+func resolve_pending_event(mode: String = "ignored") -> bool:
+	if pending_event.is_empty():
+		return false
+	var event := pending_event.duplicate(true)
+	pending_event.clear()
+	var effects_key := _pending_event_effects_key(mode)
+	var source_type := _pending_event_source_type(mode)
+	_log(_pending_event_log_label(mode) + str(event.get("name", "")))
+	_apply_effects(event.get(effects_key, []), {
+		"type": source_type,
+		"id": str(event.get("id", "")),
+		"name": str(event.get("name", "")),
+	})
+	_emit_state()
+	return true
+
+
+func pending_event_has_response(mode: String) -> bool:
+	if pending_event.is_empty():
+		return false
+	return not pending_event.get(_pending_event_effects_key(mode), []).is_empty()
 
 
 func _load_data() -> void:
@@ -189,16 +243,53 @@ func _draw_new_hand() -> void:
 		hand.append(deck.pop_back())
 
 
-func _trigger_turn_event() -> void:
+func _queue_turn_event() -> void:
 	var events: Array = []
 	for event in current_encounter.get("turn_events", []):
 		if _requirements_met(event.get("requirements", [])):
 			events.append(event)
 	if events.is_empty():
+		pending_event.clear()
 		return
 	var event = events[rng.randi_range(0, events.size() - 1)]
-	_log("回合事件：" + str(event.get("name", "")) + " - " + str(event.get("text", "")))
-	_apply_effects(event.get("effects", []))
+	pending_event = event.duplicate(true)
+	_log("事件预兆：" + str(event.get("name", "")) + " - " + str(event.get("text", "")))
+
+
+func _pending_event_effects_key(mode: String) -> String:
+	match mode:
+		"handled":
+			return "handled_effects"
+		"converted":
+			return "converted_effects"
+		"exploited":
+			return "exploited_effects"
+		_:
+			return "effects"
+
+
+func _pending_event_source_type(mode: String) -> String:
+	match mode:
+		"handled":
+			return "turn_event_handled"
+		"converted":
+			return "turn_event_converted"
+		"exploited":
+			return "turn_event_exploited"
+		_:
+			return "turn_event"
+
+
+func _pending_event_log_label(mode: String) -> String:
+	match mode:
+		"handled":
+			return "处理预兆："
+		"converted":
+			return "转化预兆："
+		"exploited":
+			return "利用预兆："
+		_:
+			return "放任预兆："
 
 
 func _apply_unplayed_status_cards() -> void:
@@ -212,7 +303,7 @@ func _apply_unplayed_status_cards() -> void:
 		_log("未处理的污染牌让理智下降：" + str(status_count))
 
 
-func _apply_effects(effects: Array) -> void:
+func _apply_effects(effects: Array, source: Dictionary = {}) -> void:
 	for effect in effects:
 		var kind = str(effect.get("kind", ""))
 		match kind:
@@ -227,6 +318,8 @@ func _apply_effects(effects: Array) -> void:
 					_log("获得卡牌：" + str(get_card_def(card_id).get("name", card_id)))
 			"log":
 				_log(str(effect.get("text", "")))
+	if not effects.is_empty():
+		effects_applied.emit(effects.duplicate(true), source.duplicate(true))
 
 
 func _change_resource(key: String, value: int) -> void:

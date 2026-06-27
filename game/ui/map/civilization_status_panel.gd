@@ -9,10 +9,11 @@ const TEXT_COLOR := Color(0.93, 0.88, 0.77, 1.0)
 const MUTED_TEXT_COLOR := Color(0.76, 0.71, 0.62, 1.0)
 const DISABLED_TEXT_COLOR := Color(0.48, 0.45, 0.40, 1.0)
 const PANEL_WIDTH := 500.0
-const PANEL_HEIGHT := 580.0
+const PANEL_HEIGHT := 700.0
 
 var header_label: Label
 var player_label: Label
+var crisis_preview_label: Label
 var current_tile_label: Label
 var selected_tile_label: Label
 var latest_snapshot: Dictionary = {}
@@ -37,6 +38,7 @@ func update_view(snapshot: Dictionary) -> void:
 		return
 	header_label.text = _format_header(snapshot)
 	player_label.text = _format_player(snapshot)
+	crisis_preview_label.text = _format_crisis_preview(snapshot)
 	current_tile_label.text = _format_current_tile(snapshot.get("current_tile", {}))
 	selected_tile_label.text = "选中地块\n" + _format_tile(snapshot.get("selected_tile", {}))
 
@@ -71,6 +73,9 @@ func _build_view() -> void:
 	player_label = _make_label(18, MUTED_TEXT_COLOR)
 	root.add_child(player_label)
 
+	crisis_preview_label = _make_label(17, MUTED_TEXT_COLOR)
+	root.add_child(crisis_preview_label)
+
 	current_tile_label = _make_label(18, MUTED_TEXT_COLOR)
 	root.add_child(current_tile_label)
 
@@ -80,20 +85,35 @@ func _build_view() -> void:
 
 func _format_header(snapshot: Dictionary) -> String:
 	var resources: Dictionary = snapshot.get("global_resources", {})
-	return "第 %s 回合  行动点 %s/%s\n信仰 %s  材料 %s  信徒 %s\n倒计时 %s：%s" % [
+	var event_label := "最终事件" if bool(snapshot.get("crisis_active", false)) else "倒计时"
+	var pending: Dictionary = snapshot.get("pending_event", {})
+	var pending_line := ""
+	if not pending.is_empty():
+		var options: Array[String] = ["放任"]
+		if not pending.get("handled_effects", []).is_empty():
+			options.append("处理")
+		if not pending.get("converted_effects", []).is_empty():
+			options.append("转化")
+		if not pending.get("exploited_effects", []).is_empty():
+			options.append("利用")
+		pending_line = "\n预兆：%s（%s）" % [str(pending.get("name", "")), " / ".join(options)]
+	return "第 %s 回合  行动点 %s/%s\n信仰 %s  材料 %s  信徒 %s\n%s %s：%s%s" % [
 		str(snapshot.get("turn", 1)),
 		str(snapshot.get("action_points", 0)),
 		str(snapshot.get("max_action_points", 0)),
 		str(resources.get("faith", 0)),
 		str(resources.get("materials", 0)),
 		str(resources.get("followers", 0)),
+		event_label,
 		str(snapshot.get("event_countdown", 0)),
 		str(snapshot.get("event_summary", "")),
+		pending_line,
 	]
 
 
 func _format_player(snapshot: Dictionary) -> String:
-	return "生命 %s/%s  等级 %s  经验 %s\n理智 %s  隐秘 %s  位置 %s" % [
+	var routes: Dictionary = snapshot.get("route_affinity", {})
+	return "生命 %s/%s  等级 %s  经验 %s\n理智 %s  隐秘 %s  位置 %s\n倾向 生命%s 信仰%s 死亡%s 隐秘%s" % [
 		str(snapshot.get("life", 0)),
 		str(snapshot.get("max_life", 0)),
 		str(snapshot.get("level", 1)),
@@ -101,7 +121,30 @@ func _format_player(snapshot: Dictionary) -> String:
 		str(snapshot.get("sanity_status", "")),
 		str(snapshot.get("secrecy_status", "")),
 		str(snapshot.get("player_coord", Vector2i.ZERO)),
+		str(routes.get("life", 0)),
+		str(routes.get("faith", 0)),
+		str(routes.get("death", 0)),
+		str(routes.get("secret", 0)),
 	]
+
+
+func _format_crisis_preview(snapshot: Dictionary) -> String:
+	if bool(snapshot.get("stage_resolved", false)):
+		return "阶段结果：%s" % str(snapshot.get("event_summary", ""))
+	var previews: Array = snapshot.get("crisis_preview", [])
+	if previews.is_empty():
+		return ""
+	var lines: Array[String] = ["准备方向"]
+	for item in previews:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var mark := "可用" if bool(item.get("ready", false)) else "准备"
+		lines.append("%s｜%s：%s" % [
+			mark,
+			str(item.get("name", "")),
+			str(item.get("status", "")),
+		])
+	return "\n".join(lines)
 
 
 func _format_current_tile(tile: Dictionary) -> String:

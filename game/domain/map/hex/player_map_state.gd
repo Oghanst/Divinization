@@ -14,6 +14,15 @@ var inventory: Dictionary = {}
 var sanity_status: String = "稳定"
 var secrecy_status: String = "隐匿"
 var secrecy_pressure: int = 2
+var crisis_active: bool = false
+var stage_resolved: bool = false
+var stage_result_id: String = ""
+var route_affinity := {
+	"life": 0,
+	"faith": 0,
+	"death": 0,
+	"secret": 0,
+}
 var global_resources := {
 	"faith": 4,
 	"materials": 1,
@@ -74,3 +83,22 @@ func heal(amount: int) -> int:
 func change_secrecy_pressure(delta: int) -> void:
 	secrecy_pressure = max(0, secrecy_pressure + delta)
 	secrecy_status = "隐匿" if secrecy_pressure == 0 else "被追踪"
+
+
+func take_damage(amount: int) -> int:
+	var before := life
+	life = max(0, life - max(0, amount))
+	return before - life
+
+
+func gain_experience(amount: int) -> void:
+	experience += max(0, amount)
+	while experience >= level * 5:
+		experience -= level * 5
+		level += 1
+
+
+func change_route_affinity(route_id: String, delta: int) -> void:
+	if route_id.is_empty():
+		return
+	route_affinity[route_id] = max(0, int(route_affinity.get(route_id, 0)) + delta)

@@ -25,6 +25,26 @@
     "action_point_cost": 1
   },
   {
+    "id": "handle_pending_event",
+    "name": "处理预兆",
+    "action_point_cost": 1
+  },
+  {
+    "id": "convert_pending_event",
+    "name": "转化预兆",
+    "action_point_cost": 1
+  },
+  {
+    "id": "exploit_pending_event",
+    "name": "利用预兆",
+    "action_point_cost": 1
+  },
+  {
+    "id": "ignore_pending_event",
+    "name": "放任预兆",
+    "action_point_cost": 0
+  },
+  {
     "id": "build_secret_shrine",
     "name": "建秘密祭坛",
     "action_point_cost": 1
@@ -32,6 +52,31 @@
   {
     "id": "enter_encounter",
     "name": "进入",
+    "action_point_cost": 0
+  },
+  {
+    "id": "resolve_cleanse_plague",
+    "name": "净化疫病",
+    "action_point_cost": 0
+  },
+  {
+    "id": "resolve_prayer_circle",
+    "name": "集体祈祷",
+    "action_point_cost": 0
+  },
+  {
+    "id": "resolve_death_authority",
+    "name": "死亡回响",
+    "action_point_cost": 0
+  },
+  {
+    "id": "resolve_hidden_escape",
+    "name": "隐秘撤离",
+    "action_point_cost": 0
+  },
+  {
+    "id": "resolve_plague_failure",
+    "name": "放任失控",
     "action_point_cost": 0
   },
   {

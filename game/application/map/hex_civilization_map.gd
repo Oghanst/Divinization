@@ -15,6 +15,20 @@ const BUILDING_DEFS_PATH := "res://data/demo/hex_map/building_defs.json"
 const STATE_DEFS_PATH := "res://data/demo/hex_map/state_defs.json"
 const MAP_ACTION_DEFS_PATH := "res://data/demo/hex_map/map_action_defs.json"
 const ITEM_DEFS_PATH := "res://data/demo/hex_map/item_defs.json"
+const CRISIS_ACTION_IDS := [
+	"resolve_cleanse_plague",
+	"resolve_prayer_circle",
+	"resolve_death_authority",
+	"resolve_hidden_escape",
+	"resolve_plague_failure",
+]
+const CARD_GLOBAL_RESOURCE_KEYS := ["faith", "materials", "followers"]
+const CARD_ROUTE_PROGRESS_TO_AFFINITY := {
+	"life_route": "life",
+	"death_route": "death",
+	"secret_route": "secret",
+	"anchor_progress": "faith",
+}
 
 @export var map_radius: int = 4
 @export var hex_size: float = 52.0
@@ -58,6 +72,10 @@ func _ready() -> void:
 
 
 func end_turn() -> void:
+	if map_state.crisis_active and not map_state.stage_resolved:
+		_log("最终事件已经爆发，必须先选择处理方式。")
+		_update_ui()
+		return
 	var faith_gain := 0
 	for tile in tiles.values():
 		if tile.owner == PLAYER_OWNER or tile.has_building("secret_shrine"):
@@ -184,7 +202,10 @@ func _connect_card_ui() -> void:
 		card_hand_layer.end_turn_requested.connect(end_card_and_map_turn)
 	if not card_hand_layer.map_action_requested.is_connected(_on_map_action_requested):
 		card_hand_layer.map_action_requested.connect(_on_map_action_requested)
+	if not card_controller.effects_applied.is_connected(_on_card_effects_applied):
+		card_controller.effects_applied.connect(_on_card_effects_applied)
 	card_controller.start_demo()
+	_sync_card_global_resources_from_map()
 
 
 func _on_primary_map_pressed(world_position: Vector2) -> void:
@@ -232,6 +253,10 @@ func _move_to_coord(coord: Vector2i) -> void:
 
 
 func _on_map_action_requested(action_id: String) -> void:
+	if map_state.crisis_active and not map_state.stage_resolved and not CRISIS_ACTION_IDS.has(action_id):
+		_log("最终事件期间无法执行普通行动。")
+		_update_ui()
+		return
 	match action_id:
 		"move":
 			_try_move_to_selected_tile()
@@ -243,12 +268,103 @@ func _on_map_action_requested(action_id: String) -> void:
 			_try_rest()
 		"hide":
 			_try_hide()
+		"handle_pending_event":
+			_try_respond_pending_event("handled", action_id)
+		"convert_pending_event":
+			_try_respond_pending_event("converted", action_id)
+		"exploit_pending_event":
+			_try_respond_pending_event("exploited", action_id)
+		"ignore_pending_event":
+			_try_respond_pending_event("ignored", action_id)
 		"build_secret_shrine":
 			_try_build_secret_shrine()
 		"enter_encounter":
 			_try_enter_encounter()
+		"resolve_cleanse_plague", "resolve_prayer_circle", "resolve_death_authority", "resolve_hidden_escape", "resolve_plague_failure":
+			_try_resolve_stage_crisis(action_id)
 		"end_turn":
 			end_turn()
+
+
+func _on_card_effects_applied(effects: Array, source: Dictionary) -> void:
+	if str(source.get("type", "")) == "final_event":
+		return
+	var changed := false
+	for effect in effects:
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+		var kind := str(effect.get("kind", ""))
+		var key := str(effect.get("key", ""))
+		var value := int(effect.get("value", 0))
+		match kind:
+			"resource":
+				if CARD_GLOBAL_RESOURCE_KEYS.has(key):
+					map_state.change_global_resource(key, value)
+					changed = true
+				elif key == "exposure" and value != 0:
+					map_state.change_secrecy_pressure(value)
+					changed = true
+			"progress":
+				if key == "source_clues" and value > 0:
+					map_state.add_item("suspicious_clue", value)
+					changed = true
+				elif key == "suspicion" and value != 0:
+					map_state.change_secrecy_pressure(value)
+					changed = true
+				elif CARD_ROUTE_PROGRESS_TO_AFFINITY.has(key) and value > 0:
+					map_state.change_route_affinity(str(CARD_ROUTE_PROGRESS_TO_AFFINITY[key]), value)
+					changed = true
+			"map_tile_state":
+				var current_tile: RefCounted = tiles.get(map_state.player_coord)
+				if current_tile != null:
+					current_tile.explored = true
+					var state_id := str(effect.get("state", ""))
+					if str(effect.get("op", "add")) == "remove":
+						current_tile.remove_state(state_id)
+					else:
+						current_tile.add_state(state_id)
+					changed = true
+			"log":
+				_log(_format_card_effect_log_prefix(source) + str(effect.get("text", "")))
+				changed = true
+	_sync_sanity_status_from_cards()
+	if changed:
+		_update_after_map_change()
+
+
+func _sync_sanity_status_from_cards() -> void:
+	if card_controller == null:
+		return
+	var sanity := int(card_controller.resources.get("sanity", 5))
+	if sanity >= 5:
+		map_state.sanity_status = "稳定"
+	elif sanity >= 3:
+		map_state.sanity_status = "临界"
+	elif sanity >= 2:
+		map_state.sanity_status = "洞见"
+	elif sanity >= 1:
+		map_state.sanity_status = "深视"
+	else:
+		map_state.sanity_status = "失真"
+
+
+func _format_card_effect_log_prefix(source: Dictionary) -> String:
+	match str(source.get("type", "")):
+		"turn_event", "turn_event_handled", "turn_event_converted", "turn_event_exploited":
+			return "事件："
+		"final_event":
+			return "结局："
+		_:
+			return "神力："
+
+
+func _sync_card_global_resources_from_map() -> void:
+	if card_controller == null:
+		return
+	var values := {}
+	for key in CARD_GLOBAL_RESOURCE_KEYS:
+		values[key] = int(map_state.global_resources.get(key, 0))
+	card_controller.sync_resources(values)
 
 
 func _try_move_to_selected_tile() -> void:
@@ -341,6 +457,32 @@ func _try_hide() -> void:
 	_update_after_map_change()
 
 
+func _try_respond_pending_event(mode: String, action_id: String) -> void:
+	var result := _evaluate_action(action_id)
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法回应预兆。")))
+		_update_ui()
+		return
+	map_state.spend_action_points(int(result.get("cost", 1)))
+	if card_controller != null and card_controller.resolve_pending_event(mode):
+		_log(_pending_event_response_log(mode))
+	else:
+		_log("没有可处理的事件预兆。")
+	_update_after_map_change()
+
+
+func _pending_event_response_log(mode: String) -> String:
+	match mode:
+		"handled":
+			return "你主动处理了本回合的事件预兆。"
+		"converted":
+			return "你把本回合的事件预兆转化成自己的道路。"
+		"exploited":
+			return "你利用了本回合的事件预兆。"
+		_:
+			return "你放任了本回合的事件预兆。"
+
+
 func _try_build_secret_shrine() -> void:
 	var result := _evaluate_action("build_secret_shrine")
 	if not bool(result.get("enabled", false)):
@@ -370,6 +512,8 @@ func _try_enter_encounter() -> void:
 
 
 func _evaluate_action(action_id: String) -> Dictionary:
+	if CRISIS_ACTION_IDS.has(action_id):
+		return _evaluate_crisis_action(action_id)
 	var def: Dictionary = map_action_defs.get(action_id, {})
 	var cost := int(def.get("action_point_cost", 1))
 	var label := str(def.get("name", action_id))
@@ -422,6 +566,31 @@ func _evaluate_action(action_id: String) -> Dictionary:
 			if map_state.secrecy_pressure <= 0:
 				enabled = false
 				reason = "暂未被追踪"
+		"handle_pending_event":
+			if card_controller == null or not card_controller.has_pending_event():
+				enabled = false
+				reason = "没有预兆事件"
+			elif not card_controller.pending_event_has_response("handled"):
+				enabled = false
+				reason = "没有处理分支"
+		"convert_pending_event":
+			if card_controller == null or not card_controller.has_pending_event():
+				enabled = false
+				reason = "没有预兆事件"
+			elif not card_controller.pending_event_has_response("converted"):
+				enabled = false
+				reason = "没有转化分支"
+		"exploit_pending_event":
+			if card_controller == null or not card_controller.has_pending_event():
+				enabled = false
+				reason = "没有预兆事件"
+			elif not card_controller.pending_event_has_response("exploited"):
+				enabled = false
+				reason = "没有利用分支"
+		"ignore_pending_event":
+			if card_controller == null or not card_controller.has_pending_event():
+				enabled = false
+				reason = "没有预兆事件"
 		"build_secret_shrine":
 			var building_def: Dictionary = building_defs.get("secret_shrine", {})
 			var material_cost := int(building_def.get("material_cost", 0))
@@ -460,12 +629,21 @@ func _evaluate_action(action_id: String) -> Dictionary:
 
 
 func _build_actions() -> Array:
+	if map_state.crisis_active and not map_state.stage_resolved:
+		var crisis_actions: Array = []
+		for action_id in CRISIS_ACTION_IDS:
+			crisis_actions.append(_evaluate_action(action_id))
+		return crisis_actions
 	return [
 		_evaluate_action("move"),
 		_evaluate_action("investigate"),
 		_evaluate_action("gather"),
 		_evaluate_action("rest"),
 		_evaluate_action("hide"),
+		_evaluate_action("handle_pending_event"),
+		_evaluate_action("convert_pending_event"),
+		_evaluate_action("exploit_pending_event"),
+		_evaluate_action("ignore_pending_event"),
 		_evaluate_action("build_secret_shrine"),
 		_evaluate_action("enter_encounter"),
 		_evaluate_action("end_turn"),
@@ -473,6 +651,7 @@ func _build_actions() -> Array:
 
 
 func _update_after_map_change() -> void:
+	_sync_card_global_resources_from_map()
 	render_layer.queue_redraw()
 	resources_changed.emit(map_state.global_resources.duplicate())
 	_update_ui()
@@ -494,12 +673,19 @@ func _build_ui_snapshot() -> Dictionary:
 		"level": map_state.level,
 		"experience": map_state.experience,
 		"sanity_status": map_state.sanity_status,
-			"secrecy_status": "%s（压力 %s）" % [map_state.secrecy_status, str(map_state.secrecy_pressure)],
-			"player_coord": map_state.player_coord,
-			"global_resources": map_state.global_resources.duplicate(),
-			"inventory": _build_inventory_snapshot(),
-			"event_countdown": map_state.event_countdown,
+		"secrecy_status": "%s（压力 %s）" % [map_state.secrecy_status, str(map_state.secrecy_pressure)],
+		"player_coord": map_state.player_coord,
+		"global_resources": map_state.global_resources.duplicate(),
+		"inventory": _build_inventory_snapshot(),
+		"event_countdown": map_state.event_countdown,
 		"event_summary": map_state.event_summary,
+		"crisis_active": map_state.crisis_active,
+		"stage_resolved": map_state.stage_resolved,
+		"stage_result_id": map_state.stage_result_id,
+		"route_affinity": map_state.route_affinity.duplicate(),
+		"crisis_preview": _build_crisis_preview(),
+		"pending_event": card_controller.pending_event.duplicate(true) if card_controller != null else {},
+		"pending_event_response_preview": _build_pending_event_response_preview(),
 		"current_tile": _build_tile_snapshot(tiles.get(map_state.player_coord)),
 		"selected_tile": _build_tile_snapshot(get_selected_tile()),
 		"actions": _build_actions(),
@@ -552,16 +738,338 @@ func _build_tile_snapshot(tile: RefCounted) -> Dictionary:
 
 
 func _advance_stage_event() -> void:
-	if map_state.event_countdown <= 0:
+	if map_state.event_countdown <= 0 or map_state.stage_resolved:
 		return
 	map_state.event_countdown -= 1
 	map_state.event_summary = "瘟疫将在 %s 回合后全面爆发" % str(map_state.event_countdown)
 	if map_state.event_countdown == 0:
-		var current_tile: RefCounted = tiles.get(map_state.player_coord)
-		if current_tile != null:
-			current_tile.add_state("plague")
-		map_state.sanity_status = "动摇"
-		_log("阶段事件：瘟疫爆发，所在地块染上疫病。")
+		_open_stage_crisis()
+
+
+func _open_stage_crisis() -> void:
+	if map_state.crisis_active or map_state.stage_resolved:
+		return
+	var current_tile: RefCounted = tiles.get(map_state.player_coord)
+	if current_tile != null:
+		current_tile.explored = true
+		current_tile.add_state("plague")
+		current_tile.add_state("panic")
+	map_state.crisis_active = true
+	map_state.event_summary = "最终事件：疫病爆发，选择处理方式"
+	map_state.sanity_status = "临界"
+	_log("阶段事件：疫病全面爆发。前几回合积累的线索、信仰、材料和隐秘状态将决定你能选择哪种结局。")
+
+
+func _try_resolve_stage_crisis(action_id: String) -> void:
+	var result := _evaluate_crisis_action(action_id)
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "条件不足。")))
+		_update_ui()
+		return
+	_resolve_stage_crisis(action_id)
+
+
+func _evaluate_crisis_action(action_id: String) -> Dictionary:
+	var def: Dictionary = map_action_defs.get(action_id, {})
+	var label := str(def.get("name", action_id))
+	var enabled: bool = map_state.crisis_active and not map_state.stage_resolved
+	var reason := ""
+	var context := _build_crisis_context()
+	match action_id:
+		"resolve_cleanse_plague":
+			if int(context.get("cure_progress", 0)) < 3:
+				enabled = false
+				reason = "治疗进度需要 3"
+			elif int(context.get("source_clues", 0)) < 2:
+				enabled = false
+				reason = "病源线索需要 2"
+		"resolve_prayer_circle":
+			if int(context.get("followers", 0)) < 2:
+				enabled = false
+				reason = "信徒需要 2"
+			elif int(context.get("faith", 0)) < 4:
+				enabled = false
+				reason = "信仰需要 4"
+			elif int(context.get("public_trust", 0)) < 1:
+				enabled = false
+				reason = "需要村民信任"
+		"resolve_death_authority":
+			if int(context.get("death_route", 0)) < 3:
+				enabled = false
+				reason = "死亡倾向需要 3"
+			elif int(context.get("materials", 0)) < 1:
+				enabled = false
+				reason = "材料需要 1"
+		"resolve_hidden_escape":
+			if int(context.get("exposure", 0)) > 1:
+				enabled = false
+				reason = "暴露不能高于 1"
+			elif int(context.get("source_clues", 0)) < 1 and int(context.get("suspicious_clue", 0)) < 1:
+				enabled = false
+				reason = "需要至少 1 个线索"
+		"resolve_plague_failure":
+			enabled = map_state.crisis_active and not map_state.stage_resolved
+			reason = ""
+		_:
+			enabled = false
+			reason = "未知结局"
+	if not map_state.crisis_active:
+		reason = "最终事件尚未爆发"
+	elif map_state.stage_resolved:
+		reason = "最终事件已结算"
+	return {
+		"id": action_id,
+		"label": label,
+		"enabled": enabled,
+		"reason": reason,
+		"cost": 0,
+	}
+
+
+func _build_crisis_context() -> Dictionary:
+	var card_snapshot := {}
+	if card_controller != null:
+		card_snapshot = card_controller.get_snapshot()
+	var card_resources: Dictionary = card_snapshot.get("resources", {})
+	var card_progress: Dictionary = card_snapshot.get("progress", {})
+	var context := {}
+	for key in card_resources.keys():
+		var resource_key := str(key)
+		if CARD_GLOBAL_RESOURCE_KEYS.has(resource_key):
+			continue
+		context[resource_key] = int(card_resources.get(key, 0))
+	for key in card_progress.keys():
+		context[str(key)] = int(card_progress.get(key, 0))
+	for key in map_state.global_resources.keys():
+		context[str(key)] = int(map_state.global_resources.get(key, 0))
+	context["suspicious_clue"] = int(map_state.inventory.get("suspicious_clue", 0))
+	context["secrecy_pressure"] = map_state.secrecy_pressure
+	return context
+
+
+func _build_crisis_preview() -> Array:
+	var context := _build_crisis_context()
+	var source_clues := int(context.get("source_clues", 0))
+	var suspicious_clues := int(context.get("suspicious_clue", 0))
+	var usable_clues = max(source_clues, suspicious_clues)
+	return [
+		{
+			"id": "resolve_cleanse_plague",
+			"name": "净化疫病",
+			"ready": int(context.get("cure_progress", 0)) >= 3 and source_clues >= 2,
+			"status": "治疗 %s/3  线索 %s/2" % [str(int(context.get("cure_progress", 0))), str(source_clues)],
+		},
+		{
+			"id": "resolve_prayer_circle",
+			"name": "集体祈祷",
+			"ready": int(context.get("followers", 0)) >= 2 and int(context.get("faith", 0)) >= 4 and int(context.get("public_trust", 0)) >= 1,
+			"status": "信徒 %s/2  信仰 %s/4  信任 %s/1" % [
+				str(int(context.get("followers", 0))),
+				str(int(context.get("faith", 0))),
+				str(int(context.get("public_trust", 0))),
+			],
+		},
+		{
+			"id": "resolve_death_authority",
+			"name": "死亡回响",
+			"ready": int(context.get("death_route", 0)) >= 3 and int(context.get("materials", 0)) >= 1,
+			"status": "死亡 %s/3  材料 %s/1" % [
+				str(int(context.get("death_route", 0))),
+				str(int(context.get("materials", 0))),
+			],
+		},
+		{
+			"id": "resolve_hidden_escape",
+			"name": "隐秘撤离",
+			"ready": int(context.get("exposure", 0)) <= 1 and usable_clues >= 1,
+			"status": "暴露 %s/≤1  线索 %s/1" % [str(int(context.get("exposure", 0))), str(usable_clues)],
+		},
+	]
+
+
+func _build_pending_event_response_preview() -> Array:
+	if card_controller == null or card_controller.pending_event.is_empty():
+		return []
+	var event: Dictionary = card_controller.pending_event
+	var response_defs := [
+		{"mode": "handled", "name": "处理", "effects_key": "handled_effects", "cost": 1},
+		{"mode": "converted", "name": "转化", "effects_key": "converted_effects", "cost": 1},
+		{"mode": "exploited", "name": "利用", "effects_key": "exploited_effects", "cost": 1},
+		{"mode": "ignored", "name": "放任", "effects_key": "effects", "cost": 0},
+	]
+	var previews: Array = []
+	for response in response_defs:
+		var effects: Array = event.get(str(response.get("effects_key", "")), [])
+		if effects.is_empty():
+			continue
+		previews.append({
+			"mode": str(response.get("mode", "")),
+			"name": str(response.get("name", "")),
+			"cost": int(response.get("cost", 0)),
+			"summary": _summarize_effects(effects),
+		})
+	return previews
+
+
+func _summarize_effects(effects: Array) -> String:
+	var parts: Array[String] = []
+	for effect in effects:
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+		var text := _summarize_effect(effect)
+		if not text.is_empty():
+			parts.append(text)
+	return "；".join(parts) if not parts.is_empty() else "无直接后果"
+
+
+func _summarize_effect(effect: Dictionary) -> String:
+	var kind := str(effect.get("kind", ""))
+	match kind:
+		"resource":
+			return "%s %s" % [_effect_resource_name(str(effect.get("key", ""))), _signed_int(int(effect.get("value", 0)))]
+		"progress":
+			return "%s %s" % [_effect_progress_name(str(effect.get("key", ""))), _signed_int(int(effect.get("value", 0)))]
+		"map_tile_state":
+			var op := str(effect.get("op", "add"))
+			var prefix := "移除状态" if op == "remove" else "地块状态"
+			return "%s：%s" % [prefix, _state_name(str(effect.get("state", "")))]
+		"add_card_to_discard":
+			return "污染牌：%s" % _card_name(str(effect.get("card_id", "")))
+		"log":
+			return ""
+	return ""
+
+
+func _effect_resource_name(key: String) -> String:
+	match key:
+		"faith":
+			return "信仰"
+		"followers":
+			return "信徒"
+		"materials":
+			return "材料"
+		"exposure":
+			return "暴露"
+		"sanity":
+			return "理智"
+		"will":
+			return "灵性"
+	return key
+
+
+func _effect_progress_name(key: String) -> String:
+	match key:
+		"cure_progress":
+			return "治疗"
+		"source_clues":
+			return "线索"
+		"anchor_progress":
+			return "锚点"
+		"public_trust":
+			return "信任"
+		"witness":
+			return "见证"
+		"infection":
+			return "感染"
+		"suspicion":
+			return "怀疑"
+		"life_route":
+			return "生命倾向"
+		"death_route":
+			return "死亡倾向"
+		"secret_route":
+			return "隐秘倾向"
+	return key
+
+
+func _state_name(state_id: String) -> String:
+	return str(state_defs.get(state_id, {}).get("name", state_id))
+
+
+func _card_name(card_id: String) -> String:
+	if card_controller == null:
+		return card_id
+	return str(card_controller.get_card_def(card_id).get("name", card_id))
+
+
+func _signed_int(value: int) -> String:
+	if value > 0:
+		return "+%s" % str(value)
+	return str(value)
+
+
+func _resolve_stage_crisis(action_id: String) -> void:
+	var current_tile: RefCounted = tiles.get(map_state.player_coord)
+	map_state.crisis_active = false
+	map_state.stage_resolved = true
+	map_state.stage_result_id = action_id
+	match action_id:
+		"resolve_cleanse_plague":
+			if current_tile != null:
+				current_tile.remove_state("plague")
+				current_tile.remove_state("polluted")
+				current_tile.remove_state("panic")
+				current_tile.add_state("blessed")
+				current_tile.claim(PLAYER_OWNER)
+			map_state.change_global_resource("faith", 2)
+			map_state.change_global_resource("followers", 1)
+			map_state.gain_experience(3)
+			map_state.change_route_affinity("life", 2)
+			map_state.sanity_status = "稳定"
+			map_state.event_summary = "病村被净化，治愈传说开始流传"
+			_log("最终事件：你净化了疫病。病村获得祝福，生命路线倾向上升。")
+		"resolve_prayer_circle":
+			if current_tile != null:
+				current_tile.remove_state("panic")
+				current_tile.add_state("anchor")
+				current_tile.claim(PLAYER_OWNER)
+				if not current_tile.has_core_building():
+					current_tile.add_building("secret_shrine", building_defs.get("secret_shrine", {}).get("yield_bonus", {}))
+			map_state.change_global_resource("faith", 3)
+			map_state.change_global_resource("followers", 2)
+			map_state.change_secrecy_pressure(1)
+			map_state.gain_experience(3)
+			map_state.change_route_affinity("faith", 2)
+			map_state.event_summary = "村民集体祈祷，病村成为神名锚点"
+			_log("最终事件：村民围成祈祷环呼唤你的名字。信仰路线倾向上升，但暴露风险也增加。")
+		"resolve_death_authority":
+			if current_tile != null:
+				current_tile.remove_state("plague")
+				current_tile.add_state("polluted")
+				current_tile.add_state("anchor")
+				current_tile.population = max(0, current_tile.population - 1)
+				current_tile.claim(PLAYER_OWNER)
+			map_state.change_global_resource("materials", -1)
+			map_state.change_global_resource("faith", 2)
+			map_state.change_secrecy_pressure(1)
+			map_state.gain_experience(3)
+			map_state.change_route_affinity("death", 3)
+			map_state.sanity_status = "洞见"
+			map_state.event_summary = "疫病被转化为死亡权柄的锚点"
+			_log("最终事件：你没有救下所有人，而是让死亡服从秩序。死亡路线倾向大幅上升。")
+		"resolve_hidden_escape":
+			if current_tile != null:
+				current_tile.add_state("plague")
+				current_tile.add_state("concealed_tracks")
+			map_state.add_item("suspicious_clue")
+			map_state.change_global_resource("materials", 1)
+			map_state.change_secrecy_pressure(-2)
+			map_state.gain_experience(1)
+			map_state.change_route_affinity("secret", 2)
+			map_state.event_summary = "你带走病源线索，病村仍陷入瘟疫"
+			_log("最终事件：你隐秘撤离，保住自身与线索，但病村没有被拯救。")
+		"resolve_plague_failure":
+			if current_tile != null:
+				current_tile.add_state("plague")
+				current_tile.add_state("panic")
+				current_tile.add_state("enemy_attention")
+				current_tile.population = max(0, current_tile.population - 1)
+			map_state.take_damage(2)
+			map_state.change_secrecy_pressure(2)
+			map_state.sanity_status = "动摇"
+			map_state.event_summary = "疫病失控，敌对势力注意到你的神迹"
+			_log("最终事件：疫病失控。你受伤并被更多敌对视线锁定。")
+	_update_after_map_change()
 
 
 func _get_effect_tile(effect: Dictionary) -> RefCounted:

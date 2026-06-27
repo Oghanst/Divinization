@@ -48,7 +48,25 @@
         "name": "病人恶化",
         "text": "又有病人开始吐出黑色血块。",
         "effects": [
-          {"kind": "progress", "key": "infection", "value": 1}
+          {"kind": "progress", "key": "infection", "value": 1},
+          {"kind": "map_tile_state", "state": "plague"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "cure_progress", "value": 1},
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "log", "text": "你提前照看恶化的病人，记下了新的病源线索。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "death_route", "value": 1},
+          {"kind": "resource", "key": "materials", "value": 1},
+          {"kind": "map_tile_state", "state": "plague"},
+          {"kind": "log", "text": "你把病人的痛苦导入死物，死亡权柄有了回应。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "faith", "value": 2},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "progress", "key": "public_trust", "value": 1},
+          {"kind": "log", "text": "你借一次公开缓解病痛换来信任，但异常传闻也扩散开来。"}
         ]
       },
       {
@@ -57,7 +75,25 @@
         "text": "路过的修士注意到了村里的异常传闻。",
         "effects": [
           {"kind": "progress", "key": "suspicion", "value": 1},
-          {"kind": "resource", "key": "exposure", "value": 1}
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "map_tile_state", "state": "enemy_attention"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "suspicion", "value": -1},
+          {"kind": "resource", "key": "exposure", "value": -1},
+          {"kind": "log", "text": "你让修士相信这只是普通疫病，追查暂时偏离。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "secret_route", "value": 1},
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": -1},
+          {"kind": "log", "text": "你把修士的怀疑引向假线索，并偷走了他的调查路径。"}
+        ],
+        "exploited_effects": [
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "map_tile_state", "state": "enemy_attention"},
+          {"kind": "log", "text": "你反向跟踪修士，得到线索，也让敌方更注意这里。"}
         ]
       },
       {
@@ -66,7 +102,26 @@
         "text": "恐慌在村民之间扩散，所有人都在寻找替罪羊。",
         "effects": [
           {"kind": "progress", "key": "suspicion", "value": 1},
-          {"kind": "resource", "key": "faith", "value": -1}
+          {"kind": "resource", "key": "faith", "value": -1},
+          {"kind": "map_tile_state", "state": "panic"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "public_trust", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 1},
+          {"kind": "log", "text": "你安抚了恐慌的村民，他们愿意听从你的安排。"}
+        ],
+        "converted_effects": [
+          {"kind": "resource", "key": "faith", "value": 2},
+          {"kind": "progress", "key": "anchor_progress", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "你把恐慌转成集体祈祷，村庄短暂成为神名回声。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "followers", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 1},
+          {"kind": "progress", "key": "suspicion", "value": 1},
+          {"kind": "map_tile_state", "state": "panic"},
+          {"kind": "log", "text": "你借恐慌传播神名，得到追随者，也留下更深不安。"}
         ]
       },
       {
@@ -76,7 +131,27 @@
         "effects": [
           {"kind": "resource", "key": "materials", "value": 1},
           {"kind": "progress", "key": "death_route", "value": 1},
+          {"kind": "map_tile_state", "state": "polluted"},
           {"kind": "add_card_to_discard", "card_id": "fever_dream"}
+        ],
+        "handled_effects": [
+          {"kind": "resource", "key": "materials", "value": 1},
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "log", "text": "你在旧井低语扩大前封住裂隙，带走一份材料和线索。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "death_route", "value": 2},
+          {"kind": "resource", "key": "materials", "value": 1},
+          {"kind": "resource", "key": "sanity", "value": -1},
+          {"kind": "map_tile_state", "state": "polluted"},
+          {"kind": "log", "text": "你让旧井低语成为死亡仪式的一部分，清醒也被带走了一点。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "materials", "value": 2},
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "sanity", "value": -1},
+          {"kind": "add_card_to_discard", "card_id": "fever_dream"},
+          {"kind": "log", "text": "你从井底捞出更多材料和线索，但热病噩梦也跟了上来。"}
         ]
       },
       {
@@ -89,6 +164,22 @@
         "effects": [
           {"kind": "resource", "key": "followers", "value": 1},
           {"kind": "resource", "key": "faith", "value": 1}
+        ],
+        "handled_effects": [
+          {"kind": "resource", "key": "followers", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 2},
+          {"kind": "progress", "key": "public_trust", "value": 1},
+          {"kind": "log", "text": "你接纳了感激家庭的帮助，让他们成为更稳定的见证人。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "anchor_progress", "value": 1},
+          {"kind": "resource", "key": "followers", "value": 1},
+          {"kind": "log", "text": "你把感激家庭变成第一个家庭锚点。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "faith", "value": 3},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "你让感激者公开作证，信仰增长，外人的注意也来了。"}
         ]
       }
     ],
