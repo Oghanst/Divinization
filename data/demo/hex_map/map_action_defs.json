@@ -1,0 +1,42 @@
+[
+  {
+    "id": "move",
+    "name": "移动",
+    "action_point_cost": 1
+  },
+  {
+    "id": "investigate",
+    "name": "调查",
+    "action_point_cost": 1
+  },
+  {
+    "id": "gather",
+    "name": "采集",
+    "action_point_cost": 1
+  },
+  {
+    "id": "rest",
+    "name": "休息",
+    "action_point_cost": 1
+  },
+  {
+    "id": "hide",
+    "name": "隐藏",
+    "action_point_cost": 1
+  },
+  {
+    "id": "build_secret_shrine",
+    "name": "建秘密祭坛",
+    "action_point_cost": 1
+  },
+  {
+    "id": "enter_encounter",
+    "name": "进入",
+    "action_point_cost": 0
+  },
+  {
+    "id": "end_turn",
+    "name": "结束回合",
+    "action_point_cost": 0
+  }
+]

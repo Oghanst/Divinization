@@ -1,0 +1,49 @@
+[
+  {
+    "id": "wild_grain_bundle",
+    "name": "野谷袋",
+    "description": "可食用的野谷，后续可接入补给和交易。",
+    "source_resource": "wild_grain"
+  },
+  {
+    "id": "medicinal_herb_bundle",
+    "name": "药草束",
+    "description": "粗略处理过的药草，后续可用于治疗或仪式。",
+    "source_resource": "medicinal_herb"
+  },
+  {
+    "id": "ancient_bark",
+    "name": "古木皮",
+    "description": "带有灵性纹理的树皮，适合做隐秘仪式材料。",
+    "source_resource": "ancient_tree"
+  },
+  {
+    "id": "stone_chunk",
+    "name": "石料",
+    "description": "可用于建设的石料。",
+    "source_resource": "stone_vein"
+  },
+  {
+    "id": "cold_iron_ore",
+    "name": "寒铁矿",
+    "description": "冰冷而沉重的矿石，后续可做装备或封印物。",
+    "source_resource": "cold_iron"
+  },
+  {
+    "id": "relic_fragment",
+    "name": "圣物碎片",
+    "description": "残缺的圣物碎片，可作为锚点或晋升素材。",
+    "source_resource": "relic_shard"
+  },
+  {
+    "id": "spring_water_vial",
+    "name": "灵泉瓶",
+    "description": "封存在小瓶里的灵泉水。",
+    "source_resource": "spirit_spring"
+  },
+  {
+    "id": "suspicious_clue",
+    "name": "异常线索",
+    "description": "调查时获得的线索，可用于后续破解事件。"
+  }
+]

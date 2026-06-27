@@ -1,0 +1,82 @@
+[
+  {
+    "id": "wild_grain",
+    "name": "野谷",
+    "icon": "粮",
+    "texture": "res://assets/generated/hex_map/resources/wild_grain.png",
+    "allowed_terrains": ["plain"],
+    "spawn_weight": 5,
+    "yield_bonus": {
+      "food": 2
+    }
+  },
+  {
+    "id": "medicinal_herb",
+    "name": "药草",
+    "icon": "药",
+    "texture": "res://assets/generated/hex_map/resources/medicinal_herb.png",
+    "allowed_terrains": ["plain", "forest"],
+    "spawn_weight": 4,
+    "yield_bonus": {
+      "food": 1,
+      "faith": 1
+    }
+  },
+  {
+    "id": "ancient_tree",
+    "name": "古木",
+    "icon": "木",
+    "texture": "res://assets/generated/hex_map/resources/ancient_tree.png",
+    "allowed_terrains": ["forest"],
+    "spawn_weight": 4,
+    "yield_bonus": {
+      "production": 2,
+      "faith": 1
+    }
+  },
+  {
+    "id": "stone_vein",
+    "name": "石脉",
+    "icon": "石",
+    "texture": "res://assets/generated/hex_map/resources/stone_vein.png",
+    "allowed_terrains": ["hill"],
+    "spawn_weight": 5,
+    "yield_bonus": {
+      "production": 2
+    }
+  },
+  {
+    "id": "cold_iron",
+    "name": "寒铁",
+    "icon": "铁",
+    "texture": "res://assets/generated/hex_map/resources/cold_iron.png",
+    "allowed_terrains": ["hill"],
+    "spawn_weight": 2,
+    "yield_bonus": {
+      "production": 3
+    }
+  },
+  {
+    "id": "relic_shard",
+    "name": "圣物碎片",
+    "icon": "遗",
+    "texture": "res://assets/generated/hex_map/resources/relic_shard.png",
+    "allowed_terrains": ["ruin", "holy_site"],
+    "spawn_weight": 3,
+    "yield_bonus": {
+      "faith": 2
+    }
+  },
+  {
+    "id": "spirit_spring",
+    "name": "灵泉",
+    "icon": "泉",
+    "texture": "res://assets/generated/hex_map/resources/spirit_spring.png",
+    "allowed_terrains": ["water", "forest"],
+    "spawn_weight": 2,
+    "yield_bonus": {
+      "food": 1,
+      "faith": 2
+    }
+  }
+]

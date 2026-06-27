@@ -1,0 +1,80 @@
+[
+    {
+        "resource_id": 1,
+        "name": "wood",
+        "description": "Wood is a resource that is used to build buildings and ships.",
+        "tags": ["building_material"]
+    },
+    {
+        "resource_id": 2,
+        "name": "stone",
+        "description": "Stone is a resource that is used to build buildings and ships.",
+        "tags": ["building_material"]
+    },
+    {
+        "resource_id": 3,
+        "name": "iron",
+        "description": "Iron is a resource that is used to build buildings and ships.",
+        "tags": ["building_material"]
+    },
+    {
+        "resource_id": 4,
+        "name": "gold",
+        "description": "Gold is a resource that is used to buy things.",
+        "tags": ["currency"]
+    },
+    {
+        "resource_id": 5,
+        "name": "food",
+        "description": "Food is a resource that is used to feed your people.",
+        "tags": ["food"]
+    },
+    {
+        "resource_id": 6,
+        "name": "ruby",
+        "description": "Ruby is a magical resource.",
+        "tags": ["magic"]
+    },
+    {
+        "resource_id": 7,
+        "name": "sapphire",
+        "description": "Sapphire is a magical resource.",
+        "tags": ["magic"]
+    },
+    {
+        "resource_id": 8,
+        "name": "emerald",
+        "description": "Emerald is a magical resource.",
+        "tags": ["magic"]
+    },
+    {
+        "resource_id": 9,
+        "name": "diamond",
+        "description": "Diamond is a magical resource.",
+        "tags": ["magic"]
+    },
+    {
+        "resource_id": 10,
+        "name": "onyx",
+        "description": "Onyx is a magical resource.",
+        "tags": ["magic"]
+    },
+    {
+        "resource_id": 11,
+        "name": "amethyst",
+        "description": "Amethyst is a magical resource.",
+        "tags": ["magic"]
+    },
+    {
+        "resource_id": 12,
+        "name": "topaz",
+        "description": "Topaz is a magical resource.",
+        "tags": ["magic"]
+    },
+    {
+        "resource_id": 13,
+        "name": "aquamarine",
+        "description": "Aquamarine is a magical resource.",
+        "tags": ["magic"]
+    }
+]

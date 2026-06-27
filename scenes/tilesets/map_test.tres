@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=7 format=3 uid="uid://cwvhr0ersxaoa"]
+[gd_resource type="TileSet" format=3 uid="uid://cwvhr0ersxaoa"]
 
 [ext_resource type="Texture2D" uid="uid://bt2ix6cedhar7" path="res://assets/resource/sproutlands/Sprout_Lands_Sprites_Basic_pack/Tilesets/Tilled_Dirt_v2.png" id="1_7h47o"]
 [ext_resource type="Texture2D" uid="uid://b4qigqi2ef38d" path="res://assets/resource/sproutlands/Sprout_Lands_Sprites_Basic_pack/Tilesets/Grass.png" id="2_hbbud"]

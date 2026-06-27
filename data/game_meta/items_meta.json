@@ -1,0 +1,26 @@
+[
+    {
+        "item_id": 1,
+        "name": "Sword",
+        "description": "A sword",
+        "is_consumable": false,
+        "is_equippable": true,
+        "icon_path": null
+    },
+    {
+        "item_id": 2,
+        "name": "Potion",
+        "description": "A potion",
+        "is_consumable": true,
+        "is_equippable": false,
+        "icon_path": null
+    },
+    {
+        "item_id": 3,
+        "name": "Shield",
+        "description": "A shield",
+        "is_consumable": false,
+        "is_equippable": true,
+        "icon_path": null
+    }
+]

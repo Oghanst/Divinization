@@ -1,236 +1,148 @@
 extends Registry
 class_name ResourceRegistry
 
-# 资源元数据注册表，只有表内的资源才能被使用，需要有默认值
+# 资源元数据注册表，只有表内的资源才能被使用
 var resource_metas:Dictionary = {}
-var registry:Dictionary = {}
+var resource_metas_path:String
+var name_to_id:Dictionary = {}
 
-func register_resource_meta(resource_name: String, resource_meta: Meta) -> void:
+func register_resource_meta(resource_meta: ResourceMeta) -> void:
 	"""
 	注册资源
 	"""
-	resource_metas[resource_name] = resource_meta
+	var resource_name = resource_meta.name
+	if resource_meta.resource_id in resource_metas.keys():
+		print("Resource " + resource_name  + str(resource_meta.resource_id) + " already exists.")
+		return
+	resource_metas[resource_meta.resource_id] = resource_meta
+	name_to_id[resource_name] = resource_meta.resource_id
 
-
-
-func register_default_resource_metas() -> void:
+func get_resource_meta_by_name(resource_name: String) -> ResourceMeta:
 	"""
-	注册默认资源
+	根据资源名获取资源元数据
 	"""
-	resource_metas["food"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 2.0,
-		},
-		"tags": ["food"],
-	})
+	return resource_metas[name_to_id[resource_name]]
 
-	resource_metas["wood"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-		"tags": ["bulding_material"],
-	})
-
-	resource_metas["stone"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-		"tags": ["bulding_material"],
-	})
-
-	resource_metas["iron"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-		"tags": ["bulding_material"],
-	})
-
-	resource_metas["gold"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-		"tags": ["currency"],
-	})
-
-	resource_metas["ruby"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-		"tags": ["magical"],
-	})
-
-	resource_metas["sapphire"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-		"tags": ["magical"],
-	})
-
-	resource_metas["emerald"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-		"tags": ["magical"],
-	})
-
-	resource_metas["topaz"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-		"tags": ["magical"],
-	})
-
-	resource_metas["diamond"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-		"tags": ["magical"],
-	})
-
-	resource_metas["onyx"] = Meta.new({
-		"property": {
-			"stock": 0,
-			"capacity": 0,
-			"regen_coef": 0.0,
-		},
-	})
-
-
-func register_basic_resource_component(tile_terrain:String, resource_config:Dictionary) -> void:
+func load_resource_metas() -> void:
 	"""
-	根据地块类型注册资源, resource_config 需要和资源的 meta 结构一致
+	加载资源元数据
 	"""
-	var config: Dictionary = {}
-	# 根据 meta 生成资源配置
-	for resource_name in resource_config:
-		var meta = resource_metas[resource_name]
-		if meta == null:
-			print("Resource not registered: " + resource_name)
-			continue
-		var temp_config = meta.construct_config(resource_config[resource_name])
-		config[resource_name] = temp_config
-	registry[tile_terrain] = ResourceComponent.new(config)
+	var file = FileAccess.open(resource_metas_path, FileAccess.READ)
+	if file:
+		var data = JSON.new()
+		var error = data.parse(file.get_as_text())
+		if error == OK:
+			var resources_data = data.result
+			for resource_data in resources_data: # resources_data is a list of dictionaries
+				var resource_meta:ResourceMeta = ResourceMeta.new()
+				resource_meta.construct_resource_meta(resource_data)
+				register_resource_meta(resource_meta)
+		else:
+			print("An error occurred when trying to parse the resource file.")
+	else:
+		print("An error occurred when trying to access the resource file.")
 
-func register_default_resources() -> void:
-	"""
-	注册默认资源
-	"""
-	register_basic_resource_component("grass", {
-		"food": {
-			"property": {
-				"stock": 300,
-				"capacity": 1000,
-				"regen_coef": 2.0,
-			},
-		},
-		"wood": {
-			"property": {
-				"stock": 250,
-				"capacity": 500,
-				"regen_coef": 0.5,
-			},
-		},
-		"stone": {
-			"property": {
-				"stock": 100,
-				"capacity": 100,
-				"regen_coef": 0.0,
-			},
-		},
-		"iron": {
-			"property": {
-				"stock": 100,
-				"capacity": 100,
-				"regen_coef": 0.0,
-			},
-		},
-		"gold": {
-			"property": {
-				"stock": 0,
-				"capacity": 100,
-				"regen_coef": 0.0,
-			},
-		},
-	})
-	register_basic_resource_component("plain", {
-		"food": {
-			"property": {
-				"stock": 200,
-				"capacity": 1000,
-				"regen_coef": 2.0,
-			},
-		},
-		"wood": {
-			"property": {
-				"stock": 200,
-				"capacity": 500,
-				"regen_coef": 0.5,
-			},
-		},
-		"stone": {
-			"property": {
-				"stock": 50,
-				"capacity": 100,
-				"regen_coef": 0.0,
-			},
-		},
-		"iron": {
-			"property": {
-				"stock": 50,
-				"capacity": 100,
-				"regen_coef": 0.0,
-			},
-		},
-		"gold": {
-			"property": {
-				"stock": 0,
-				"capacity": 100,
-				"regen_coef": 0.0,
-			},
-		},
-		"ruby": {
-			"property": {
-				"stock": 0,
-				"capacity": 100,
-				"regen_coef": 0.0,
-			},
-		},
-	})
-
-func get_component(tile_terrain: String) -> ResourceComponent:
-	"""
-	获取资源组件的实例
-	"""
-	return registry[tile_terrain].duplicate()
 
 func _init() -> void:
 	print("ResourceRegistry ready")
-	register_default_resource_metas()
-	register_default_resources()
+	if resource_metas_path:
+		load_resource_metas()
+	else:
+		register_default_resource_metas()
+		print("ResourceRegistry: No resource meta file specified, using default values.")
 
 func cleanup() -> void:
 	"""
 	清理资源
 	"""
-	registry.clear()
 	resource_metas.clear()
+
+
+func register_default_resource_metas() -> void:
+	"""
+	注册默认资源元数据
+	"""
+	var resources_meta_data = [
+		{
+			"resource_id": 1,
+			"name": "wood",
+			"description": "Wood is a resource that is used to build buildings and ships.",
+			"tags": ["building_material"]
+		},
+		{
+			"resource_id": 2,
+			"name": "stone",
+			"description": "Stone is a resource that is used to build buildings and ships.",
+			"tags": ["building_material"]
+		},
+		{
+			"resource_id": 3,
+			"name": "iron",
+			"description": "Iron is a resource that is used to build buildings and ships.",
+			"tags": ["building_material"]
+		},
+		{
+			"resource_id": 4,
+			"name": "gold",
+			"description": "Gold is a resource that is used to buy things.",
+			"tags": ["currency"]
+		},
+		{
+			"resource_id": 5,
+			"name": "food",
+			"description": "Food is a resource that is used to feed your people.",
+			"tags": ["food"]
+		},
+		{
+			"resource_id": 6,
+			"name": "ruby",
+			"description": "Ruby is a magical resource.",
+			"tags": ["magic"]
+		},
+		{
+			"resource_id": 7,
+			"name": "sapphire",
+			"description": "Sapphire is a magical resource.",
+			"tags": ["magic"]
+		},
+		{
+			"resource_id": 8,
+			"name": "emerald",
+			"description": "Emerald is a magical resource.",
+			"tags": ["magic"]
+		},
+		{
+			"resource_id": 9,
+			"name": "diamond",
+			"description": "Diamond is a magical resource.",
+			"tags": ["magic"]
+		},
+		{
+			"resource_id": 10,
+			"name": "onyx",
+			"description": "Onyx is a magical resource.",
+			"tags": ["magic"]
+		},
+		{
+			"resource_id": 11,
+			"name": "amethyst",
+			"description": "Amethyst is a magical resource.",
+			"tags": ["magic"]
+		},
+		{
+			"resource_id": 12,
+			"name": "topaz",
+			"description": "Topaz is a magical resource.",
+			"tags": ["magic"]
+		},
+		{
+			"resource_id": 13,
+			"name": "aquamarine",
+			"description": "Aquamarine is a magical resource.",
+			"tags": ["magic"]
+		}
+	]
+	for resource_data in resources_meta_data:
+		var resource_meta:ResourceMeta = ResourceMeta.new()
+		resource_meta.construct_resource_meta(resource_data)
+		register_resource_meta(resource_meta)

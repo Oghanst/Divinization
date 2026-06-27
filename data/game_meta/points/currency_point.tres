@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Point" load_steps=2 format=3 uid="uid://c13lyp2p171cg"]
+
+[ext_resource type="Script" path="res://game/domain/elements/points/point.gd" id="1_p45mj"]
+
+[resource]
+script = ExtResource("1_p45mj")
+point_id = 2
+name = "currency"
+description = ""
+quantity = 0
+max_quantity = -1

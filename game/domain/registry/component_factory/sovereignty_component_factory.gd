@@ -1,19 +1,19 @@
 extends Registry
-class_name SovereigntyRegistry
+class_name SovereigntyComponentFactory
 
-var sovereignty_meta: Meta = Meta.new({
+var sovereignty_proto: Proto = Proto.new({
 	"divine": "",
 	"city": "",
 })
 
-var registry:Dictionary = {}
+var factory:Dictionary = {}
 
 func register_basic_sovereignty_component(key:String, sovereignty_config:Dictionary) -> void:
 	"""
-	根据 key 注册主权, sovereignty_config 需要和主权的 meta 结构一致
+	根据 key 注册主权, sovereignty_config 需要和主权的 proto 结构一致
 	"""
-	var config: Dictionary = sovereignty_meta.construct_config(sovereignty_config)
-	registry[key] = SovereigntyComponent.new(config)
+	var config: Dictionary = sovereignty_proto.construct_config(sovereignty_config)
+	factory[key] = SovereigntyComponent.new(config)
 
 func register_default_sovereignty() -> void:
 	"""
@@ -27,16 +27,19 @@ func register_default_sovereignty() -> void:
 	
 
 func _init() -> void:
-	print("SovereigntyRegistry ready")
+	print("SovereigntyComponentFactory ready")
 	register_default_sovereignty()
 
 func get_component(key: String = "") -> SovereigntyComponent:
 	"""
 	获取主权组件的实例， key 为空则返回默认主权（无主权）组件
 	"""
-	return registry[key].duplicate()
+	return factory[key].duplicate()
 
 
 func cleanup() -> void:
-	registry.clear()
-	sovereignty_meta.clear()
+	for component in factory.values():
+		component.free()
+	factory.clear()
+	sovereignty_proto.clear()
+	sovereignty_proto.free()

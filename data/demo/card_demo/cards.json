@@ -6,10 +6,22 @@
     "cost": 1,
     "text": "检查病人的症状，寻找疫病来源。",
     "effects": [
-      {"kind": "progress", "key": "source_clues", "value": 1},
-      {"kind": "progress", "key": "cure_progress", "value": 1},
-      {"kind": "log", "text": "你记下了病症的共同点，疫病源头逐渐清晰。"}
-    ]
+      {
+        "kind": "progress",
+        "key": "source_clues",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "cure_progress",
+        "value": 1
+      },
+      {
+        "kind": "log",
+        "text": "你记下了病症的共同点，疫病源头逐渐清晰。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/observe_symptoms.png"
   },
   {
     "id": "weak_heal",
@@ -18,16 +30,45 @@
     "cost": 1,
     "text": "消耗灵性缓解一名病人的痛苦，换来第一批见证。",
     "requirements": [
-      {"scope": "resource", "key": "will", "op": ">=", "value": 1}
+      {
+        "scope": "resource",
+        "key": "will",
+        "op": ">=",
+        "value": 1
+      }
     ],
     "effects": [
-      {"kind": "resource", "key": "will", "value": -1},
-      {"kind": "resource", "key": "faith", "value": 1},
-      {"kind": "resource", "key": "exposure", "value": 1},
-      {"kind": "progress", "key": "cure_progress", "value": 1},
-      {"kind": "progress", "key": "life_route", "value": 1},
-      {"kind": "log", "text": "退烧的人开始低声谈论你的名字。"}
-    ]
+      {
+        "kind": "resource",
+        "key": "will",
+        "value": -1
+      },
+      {
+        "kind": "resource",
+        "key": "faith",
+        "value": 1
+      },
+      {
+        "kind": "resource",
+        "key": "exposure",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "cure_progress",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "life_route",
+        "value": 1
+      },
+      {
+        "kind": "log",
+        "text": "退烧的人开始低声谈论你的名字。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/weak_heal.png"
   },
   {
     "id": "private_preach",
@@ -36,11 +77,27 @@
     "cost": 1,
     "text": "避开外人，向一个绝望家庭讲述你的神名。",
     "effects": [
-      {"kind": "resource", "key": "faith", "value": 1},
-      {"kind": "resource", "key": "followers", "value": 1},
-      {"kind": "resource", "key": "exposure", "value": 1},
-      {"kind": "log", "text": "一个家庭愿意在夜里为你点燃第一盏灯。"}
-    ]
+      {
+        "kind": "resource",
+        "key": "faith",
+        "value": 1
+      },
+      {
+        "kind": "resource",
+        "key": "followers",
+        "value": 1
+      },
+      {
+        "kind": "resource",
+        "key": "exposure",
+        "value": 1
+      },
+      {
+        "kind": "log",
+        "text": "一个家庭愿意在夜里为你点燃第一盏灯。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/private_preach.png"
   },
   {
     "id": "whisper_dream",
@@ -49,15 +106,40 @@
     "cost": 1,
     "text": "在梦里留下启示，影响一个关键人物。",
     "requirements": [
-      {"scope": "resource", "key": "sanity", "op": ">=", "value": 1}
+      {
+        "scope": "resource",
+        "key": "sanity",
+        "op": ">=",
+        "value": 1
+      }
     ],
     "effects": [
-      {"kind": "resource", "key": "sanity", "value": -1},
-      {"kind": "resource", "key": "faith", "value": 1},
-      {"kind": "progress", "key": "witness", "value": 1},
-      {"kind": "progress", "key": "secret_route", "value": 1},
-      {"kind": "log", "text": "有人醒来后记得一个不属于人间的声音。"}
-    ]
+      {
+        "kind": "resource",
+        "key": "sanity",
+        "value": -1
+      },
+      {
+        "kind": "resource",
+        "key": "faith",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "witness",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "secret_route",
+        "value": 1
+      },
+      {
+        "kind": "log",
+        "text": "有人醒来后记得一个不属于人间的声音。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/whisper_dream.png"
   },
   {
     "id": "search_old_well",
@@ -66,10 +148,22 @@
     "cost": 1,
     "text": "调查村中旧井，寻找材料和病源线索。",
     "effects": [
-      {"kind": "resource", "key": "materials", "value": 1},
-      {"kind": "progress", "key": "source_clues", "value": 1},
-      {"kind": "log", "text": "旧井石缝里残留着潮湿骨片和可疑黑泥。"}
-    ]
+      {
+        "kind": "resource",
+        "key": "materials",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "source_clues",
+        "value": 1
+      },
+      {
+        "kind": "log",
+        "text": "旧井石缝里残留着潮湿骨片和可疑黑泥。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/search_old_well.png"
   },
   {
     "id": "hide_tracks",
@@ -78,10 +172,22 @@
     "cost": 1,
     "text": "抹去异常痕迹，降低审判官和修士的注意。",
     "effects": [
-      {"kind": "resource", "key": "exposure", "value": -2},
-      {"kind": "progress", "key": "suspicion", "value": -1},
-      {"kind": "log", "text": "你让所有奇迹看起来都像巧合。"}
-    ]
+      {
+        "kind": "resource",
+        "key": "exposure",
+        "value": -2
+      },
+      {
+        "kind": "progress",
+        "key": "suspicion",
+        "value": -1
+      },
+      {
+        "kind": "log",
+        "text": "你让所有奇迹看起来都像巧合。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/hide_tracks.png"
   },
   {
     "id": "small_ritual",
@@ -90,16 +196,46 @@
     "cost": 2,
     "text": "以材料和信仰举行小仪式，制造锚点雏形。",
     "requirements": [
-      {"scope": "resource", "key": "materials", "op": ">=", "value": 1},
-      {"scope": "resource", "key": "faith", "op": ">=", "value": 1}
+      {
+        "scope": "resource",
+        "key": "materials",
+        "op": ">=",
+        "value": 1
+      },
+      {
+        "scope": "resource",
+        "key": "faith",
+        "op": ">=",
+        "value": 1
+      }
     ],
     "effects": [
-      {"kind": "resource", "key": "materials", "value": -1},
-      {"kind": "resource", "key": "faith", "value": 2},
-      {"kind": "resource", "key": "exposure", "value": 1},
-      {"kind": "progress", "key": "anchor_progress", "value": 1},
-      {"kind": "log", "text": "村庄某处留下了无法解释的微弱圣痕。"}
-    ]
+      {
+        "kind": "resource",
+        "key": "materials",
+        "value": -1
+      },
+      {
+        "kind": "resource",
+        "key": "faith",
+        "value": 2
+      },
+      {
+        "kind": "resource",
+        "key": "exposure",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "anchor_progress",
+        "value": 1
+      },
+      {
+        "kind": "log",
+        "text": "村庄某处留下了无法解释的微弱圣痕。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/small_ritual.png"
   },
   {
     "id": "death_transfer",
@@ -108,17 +244,52 @@
     "cost": 2,
     "text": "将一部分疫病导入死物，换取死亡权柄的回响。",
     "requirements": [
-      {"scope": "progress", "key": "source_clues", "op": ">=", "value": 1},
-      {"scope": "resource", "key": "materials", "op": ">=", "value": 1},
-      {"scope": "resource", "key": "sanity", "op": ">=", "value": 1}
+      {
+        "scope": "progress",
+        "key": "source_clues",
+        "op": ">=",
+        "value": 1
+      },
+      {
+        "scope": "resource",
+        "key": "materials",
+        "op": ">=",
+        "value": 1
+      },
+      {
+        "scope": "resource",
+        "key": "sanity",
+        "op": ">=",
+        "value": 1
+      }
     ],
     "effects": [
-      {"kind": "resource", "key": "materials", "value": -1},
-      {"kind": "resource", "key": "sanity", "value": -1},
-      {"kind": "progress", "key": "infection", "value": -1},
-      {"kind": "progress", "key": "death_route", "value": 2},
-      {"kind": "log", "text": "死者安静了，活人却开始害怕你的慈悲。"}
-    ]
+      {
+        "kind": "resource",
+        "key": "materials",
+        "value": -1
+      },
+      {
+        "kind": "resource",
+        "key": "sanity",
+        "value": -1
+      },
+      {
+        "kind": "progress",
+        "key": "infection",
+        "value": -1
+      },
+      {
+        "kind": "progress",
+        "key": "death_route",
+        "value": 2
+      },
+      {
+        "kind": "log",
+        "text": "死者安静了，活人却开始害怕你的慈悲。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/death_transfer.png"
   },
   {
     "id": "calm_villagers",
@@ -127,11 +298,27 @@
     "cost": 1,
     "text": "缓解恐慌，让村民愿意配合你的安排。",
     "effects": [
-      {"kind": "resource", "key": "faith", "value": 1},
-      {"kind": "progress", "key": "public_trust", "value": 1},
-      {"kind": "progress", "key": "suspicion", "value": -1},
-      {"kind": "log", "text": "恐慌暂时退去，人们开始等待你的下一步。"}
-    ]
+      {
+        "kind": "resource",
+        "key": "faith",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "public_trust",
+        "value": 1
+      },
+      {
+        "kind": "progress",
+        "key": "suspicion",
+        "value": -1
+      },
+      {
+        "kind": "log",
+        "text": "恐慌暂时退去，人们开始等待你的下一步。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/calm_villagers.png"
   },
   {
     "id": "fever_dream",
@@ -141,8 +328,16 @@
     "text": "打出以压下噩梦。若留在手中，回合结束时会拖慢你。",
     "exhaust": true,
     "effects": [
-      {"kind": "resource", "key": "sanity", "value": 1},
-      {"kind": "log", "text": "你从热病幻觉里夺回了一点清醒。"}
-    ]
+      {
+        "kind": "resource",
+        "key": "sanity",
+        "value": 1
+      },
+      {
+        "kind": "log",
+        "text": "你从热病幻觉里夺回了一点清醒。"
+      }
+    ],
+    "art": "res://assets/generated/card_demo/art/fever_dream.png"
   }
 ]

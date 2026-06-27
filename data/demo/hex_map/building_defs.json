@@ -1,0 +1,15 @@
+[
+  {
+    "id": "secret_shrine",
+    "name": "秘密祭坛",
+    "description": "隐秘信仰的第一处锚点。每回合提供少量信仰，并作为后续仪式的挂点。",
+    "material_cost": 2,
+    "action_point_cost": 1,
+    "terrain_blocklist": ["water"],
+    "max_per_tile": 1,
+    "core": true,
+    "yield_bonus": {
+      "faith": 1
+    }
+  }
+]

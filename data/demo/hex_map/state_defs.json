@@ -1,0 +1,52 @@
+[
+  {
+    "id": "investigated",
+    "name": "已调查",
+    "description": "这片地块的表层异常已经被确认。"
+  },
+  {
+    "id": "depleted",
+    "name": "采集过",
+    "description": "本轮原型中，该地块的可采集资源已经被转化为材料。"
+  },
+  {
+    "id": "blessed",
+    "name": "祝福",
+    "description": "神力暂时庇护了此处。"
+  },
+  {
+    "id": "polluted",
+    "name": "污染",
+    "description": "灵性污染正在侵蚀此处，休息效果降低。"
+  },
+  {
+    "id": "plague",
+    "name": "疫病",
+    "description": "瘟疫正在蔓延。"
+  },
+  {
+    "id": "panic",
+    "name": "恐慌",
+    "description": "凡人秩序开始动摇。"
+  },
+  {
+    "id": "enemy_attention",
+    "name": "敌方关注",
+    "description": "敌对势力已经注意到这里。"
+  },
+  {
+    "id": "anchor",
+    "name": "锚点",
+    "description": "这里可以承载更稳定的信仰或仪式。"
+  },
+  {
+    "id": "concealed_tracks",
+    "name": "痕迹已清理",
+    "description": "近期行动被遮蔽，追踪压力降低。"
+  },
+  {
+    "id": "encounter_active",
+    "name": "遭遇已触发",
+    "description": "这里已经进入占位遭遇流程。"
+  }
+]

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Point" load_steps=2 format=3 uid="uid://dwjp1hs2f44uu"]
+
+[ext_resource type="Script" path="res://game/domain/elements/points/point.gd" id="1_ejgh6"]
+
+[resource]
+script = ExtResource("1_ejgh6")
+point_id = 1
+name = "food"
+description = ""
+quantity = 0
+max_quantity = -1

@@ -1,20 +1,20 @@
 extends Registry
-class_name PopulationRegistry
+class_name PopulationComponentFactory
 
 # 人口元数据，不需要像资源元数据一样是个dict
-var population_meta: Meta = Meta.new({
+var population_proto: Proto = Proto.new({
 	"population": 0,
 	"residency": 0,
 	"food_consumption_coef": 1.0,
 })
-var registry:Dictionary = {}
+var factory:Dictionary = {}
 
 func register_basic_population_component(key:String, population_config:Dictionary) -> void:
 	"""
-	根据 key 注册人口组件, population_config 需要和人口的 meta 结构一致
+	根据 key 注册人口组件, population_config 需要和人口的 proto 结构一致
 	"""
-	var config: Dictionary = population_meta.construct_config(population_config)
-	registry[key] = PopulationComponent.new(config)
+	var config: Dictionary = population_proto.construct_config(population_config)
+	factory[key] = PopulationComponent.new(config)
 
 func register_default_population() -> void:
 	"""
@@ -35,12 +35,15 @@ func get_component(key: String) -> PopulationComponent:
 	"""
 	获取人口组件的实例
 	"""
-	return registry[key].duplicate()
+	return factory[key].duplicate()
 
 func _init() -> void:
-	print("PopulationRegistry ready")
+	print("PopulationComponentFactory ready")
 	register_default_population()
 
 func cleanup() -> void:
-	registry.clear()
-	population_meta.clear()
+	for component in factory.values():
+		component.free()
+	factory.clear()
+	population_proto.clear()
+	population_proto.free()

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "plain",
+    "name": "平原",
+    "color": "4d6e40",
+    "texture": "res://assets/generated/hex_map/terrain/plain.png",
+    "base_yields": {
+      "food": 2,
+      "production": 1,
+      "faith": 0
+    }
+  },
+  {
+    "id": "forest",
+    "name": "森林",
+    "color": "295236",
+    "texture": "res://assets/generated/hex_map/terrain/forest.png",
+    "base_yields": {
+      "food": 1,
+      "production": 2,
+      "faith": 0
+    }
+  },
+  {
+    "id": "hill",
+    "name": "丘陵",
+    "color": "6e5e47",
+    "texture": "res://assets/generated/hex_map/terrain/hill.png",
+    "base_yields": {
+      "food": 0,
+      "production": 3,
+      "faith": 0
+    }
+  },
+  {
+    "id": "water",
+    "name": "水域",
+    "color": "294d6e",
+    "texture": "res://assets/generated/hex_map/terrain/water.png",
+    "base_yields": {
+      "food": 1,
+      "production": 0,
+      "faith": 0
+    }
+  },
+  {
+    "id": "ruin",
+    "name": "遗迹",
+    "color": "594f63",
+    "texture": "res://assets/generated/hex_map/terrain/ruin.png",
+    "base_yields": {
+      "food": 0,
+      "production": 1,
+      "faith": 1
+    }
+  },
+  {
+    "id": "holy_site",
+    "name": "圣址",
+    "color": "786139",
+    "texture": "res://assets/generated/hex_map/terrain/holy_site.png",
+    "base_yields": {
+      "food": 0,
+      "production": 0,
+      "faith": 3
+    }
+  }
+]

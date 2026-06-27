@@ -6,4 +6,4 @@ func _ready() -> void:
 	attribute_system = AttributeSystem.new()
 
 func _exit_tree() -> void:
-	pass 
+	attribute_system.free()

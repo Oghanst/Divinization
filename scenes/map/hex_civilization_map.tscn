@@ -1,0 +1,48 @@
+[gd_scene load_steps=7 format=3 uid="uid://cdujfkvx6fcte"]
+
+[ext_resource type="Script" uid="uid://5ep8o4ontkbt" path="res://game/application/map/hex_civilization_map.gd" id="1"]
+[ext_resource type="Script" path="res://game/application/map/hex_map_render_layer.gd" id="2"]
+[ext_resource type="Script" path="res://game/application/map/hex_map_camera_controller.gd" id="3"]
+[ext_resource type="Script" path="res://game/ui/map/civilization_status_panel.gd" id="4"]
+[ext_resource type="Script" path="res://game/application/card_demo/card_run_controller.gd" id="5"]
+[ext_resource type="Script" path="res://game/ui/card_demo/map_card_hand_layer.gd" id="6"]
+
+[node name="HexCivilizationMap" type="Node2D" unique_id=337240020]
+script = ExtResource("1")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="HexMapRenderLayer" type="Node2D" parent="World"]
+script = ExtResource("2")
+
+[node name="HexMapCamera" type="Camera2D" parent="."]
+enabled = true
+
+[node name="MapInputController" type="Node" parent="."]
+script = ExtResource("3")
+
+[node name="MapUILayer" type="CanvasLayer" parent="."]
+
+[node name="CivilizationStatusPanel" type="Control" parent="MapUILayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("4")
+
+[node name="CardRunController" type="Node" parent="."]
+script = ExtResource("5")
+
+[node name="CardUILayer" type="CanvasLayer" parent="."]
+layer = 8
+
+[node name="MapCardHandLayer" type="Control" parent="CardUILayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("6")

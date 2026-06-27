@@ -22,8 +22,9 @@ func get_registry(registry_name:String) -> Registry:
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	add_registry("resource_registry", ResourceRegistry.new())
-	add_registry("population_registry", PopulationRegistry.new())
-	add_registry("sovereignty_registry", SovereigntyRegistry.new())
+	add_registry("resource_component_factory", ResourceComponentFactory.new())
+	add_registry("population_component_factory", PopulationComponentFactory.new())
+	add_registry("sovereignty_component_factory", SovereigntyComponentFactory.new())
 	add_registry("terrain_registry", TerrainRegistry.new())
 
 
