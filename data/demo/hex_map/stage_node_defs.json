@@ -1,0 +1,95 @@
+[
+  {
+    "id": "graveyard_afterplague",
+    "name": "林边墓地",
+    "description": "死者的低语从林边墓地传来，那里可能藏着疫病死潮的源头。",
+    "event_key": "graveyard_dead_tide",
+    "encounter_id": "sick_village",
+    "turn_limit": 5,
+    "summary_template": "墓地死疫将在 {countdown} 回合后聚拢",
+    "crisis_summary": "最终事件：墓地死疫爆发，选择处理方式",
+    "crisis_log": "阶段事件：墓地里的死疫醒来。你先前积累的线索、死亡倾向和隐秘状态会决定出路。",
+    "effects": [
+      {
+        "scope": "card_progress",
+        "key": "death_route",
+        "delta": 1
+      },
+      {
+        "scope": "route_affinity",
+        "route": "death",
+        "delta": 1
+      },
+      {
+        "scope": "tile_state",
+        "state": "polluted"
+      },
+      {
+        "scope": "log",
+        "text": "你选择前往林边墓地，死亡的气息变得更容易被你听见。"
+      }
+    ]
+  },
+  {
+    "id": "ruined_shrine_anchor",
+    "name": "废弃神庙",
+    "description": "一座废弃神庙仍残留着旧信仰，可以用来尝试建立更稳的锚点。",
+    "event_key": "shrine_anchor_loss",
+    "encounter_id": "sick_village",
+    "turn_limit": 6,
+    "summary_template": "神庙锚点将在 {countdown} 回合后失控",
+    "crisis_summary": "最终事件：神庙锚点失控，选择处理方式",
+    "crisis_log": "阶段事件：废弃神庙里的锚点开始震动。信仰、材料和村民信任会决定你能否稳住它。",
+    "effects": [
+      {
+        "scope": "card_progress",
+        "key": "anchor_progress",
+        "delta": 1
+      },
+      {
+        "scope": "global_resource",
+        "key": "faith",
+        "delta": 1
+      },
+      {
+        "scope": "tile_state",
+        "state": "anchor"
+      },
+      {
+        "scope": "log",
+        "text": "你选择进入废弃神庙，旧信仰在石缝里重新发出微光。"
+      }
+    ]
+  },
+  {
+    "id": "old_well_source",
+    "name": "旧井病源",
+    "description": "旧井深处反复传出病人的梦话，那里也许能找到病源的真名。",
+    "event_key": "old_well_source_spread",
+    "encounter_id": "sick_village",
+    "turn_limit": 4,
+    "summary_template": "旧井病源将在 {countdown} 回合后扩散",
+    "crisis_summary": "最终事件：旧井病源扩散，选择处理方式",
+    "crisis_log": "阶段事件：旧井深处的病源开始扩散。线索、隐秘和治疗准备会决定你能否控制它。",
+    "effects": [
+      {
+        "scope": "card_progress",
+        "key": "source_clues",
+        "delta": 1
+      },
+      {
+        "scope": "inventory",
+        "item": "suspicious_clue",
+        "delta": 1
+      },
+      {
+        "scope": "secrecy_pressure",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "你选择调查旧井，得到一段病源线索，也留下了被追踪的痕迹。"
+      }
+    ]
+  }
+]

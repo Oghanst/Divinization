@@ -15,13 +15,10 @@ const BUILDING_DEFS_PATH := "res://data/demo/hex_map/building_defs.json"
 const STATE_DEFS_PATH := "res://data/demo/hex_map/state_defs.json"
 const MAP_ACTION_DEFS_PATH := "res://data/demo/hex_map/map_action_defs.json"
 const ITEM_DEFS_PATH := "res://data/demo/hex_map/item_defs.json"
-const CRISIS_ACTION_IDS := [
-	"resolve_cleanse_plague",
-	"resolve_prayer_circle",
-	"resolve_death_authority",
-	"resolve_hidden_escape",
-	"resolve_plague_failure",
-]
+const STAGE_REWARD_DEFS_PATH := "res://data/demo/hex_map/stage_reward_defs.json"
+const STAGE_NODE_DEFS_PATH := "res://data/demo/hex_map/stage_node_defs.json"
+const STAGE_CRISIS_DEFS_PATH := "res://data/demo/hex_map/stage_crisis_defs.json"
+const STAGE_EVENT_DEFS_PATH := "res://data/demo/hex_map/stage_event_defs.json"
 const CARD_GLOBAL_RESOURCE_KEYS := ["faith", "materials", "followers"]
 const CARD_ROUTE_PROGRESS_TO_AFFINITY := {
 	"life_route": "life",
@@ -29,6 +26,9 @@ const CARD_ROUTE_PROGRESS_TO_AFFINITY := {
 	"secret_route": "secret",
 	"anchor_progress": "faith",
 }
+const ITEM_ACTION_PREFIX := "use_item:"
+const REWARD_ACTION_PREFIX := "claim_reward:"
+const NODE_ACTION_PREFIX := "choose_node:"
 
 @export var map_radius: int = 4
 @export var hex_size: float = 52.0
@@ -51,6 +51,10 @@ var building_defs: Dictionary = {}
 var state_defs: Dictionary = {}
 var map_action_defs: Dictionary = {}
 var item_defs: Dictionary = {}
+var stage_reward_defs: Dictionary = {}
+var stage_node_defs: Dictionary = {}
+var stage_crisis_defs: Dictionary = {}
+var stage_event_defs: Dictionary = {}
 var resource_to_item_id: Dictionary = {}
 var event_log: Array[String] = []
 var map_ui_scale := 1.0
@@ -143,6 +147,10 @@ func _load_config_defs() -> void:
 	state_defs = _defs_by_id(_read_json_array(STATE_DEFS_PATH))
 	map_action_defs = _defs_by_id(_read_json_array(MAP_ACTION_DEFS_PATH))
 	item_defs = _defs_by_id(_read_json_array(ITEM_DEFS_PATH))
+	stage_reward_defs = _defs_by_id(_read_json_array(STAGE_REWARD_DEFS_PATH))
+	stage_node_defs = _defs_by_id(_read_json_array(STAGE_NODE_DEFS_PATH))
+	stage_crisis_defs = _defs_by_id(_read_json_array(STAGE_CRISIS_DEFS_PATH))
+	stage_event_defs = _defs_by_id(_read_json_array(STAGE_EVENT_DEFS_PATH))
 	resource_to_item_id.clear()
 	for item_id in item_defs.keys():
 		var item_def: Dictionary = item_defs[item_id]
@@ -204,7 +212,7 @@ func _connect_card_ui() -> void:
 		card_hand_layer.map_action_requested.connect(_on_map_action_requested)
 	if not card_controller.effects_applied.is_connected(_on_card_effects_applied):
 		card_controller.effects_applied.connect(_on_card_effects_applied)
-	card_controller.start_demo()
+	card_controller.start_demo("sick_village", _get_stage_turn_events(map_state.event_key), map_state.event_key)
 	_sync_card_global_resources_from_map()
 
 
@@ -253,9 +261,26 @@ func _move_to_coord(coord: Vector2i) -> void:
 
 
 func _on_map_action_requested(action_id: String) -> void:
-	if map_state.crisis_active and not map_state.stage_resolved and not CRISIS_ACTION_IDS.has(action_id):
+	if action_id.begins_with(REWARD_ACTION_PREFIX):
+		_try_claim_stage_reward(action_id.substr(REWARD_ACTION_PREFIX.length()))
+		return
+	if action_id.begins_with(NODE_ACTION_PREFIX):
+		_try_choose_stage_node(action_id.substr(NODE_ACTION_PREFIX.length()))
+		return
+	if map_state.stage_node_pending:
+		_log("请先选择下一个关卡节点。")
+		_update_ui()
+		return
+	if map_state.stage_reward_pending:
+		_log("请先选择阶段奖励。")
+		_update_ui()
+		return
+	if map_state.crisis_active and not map_state.stage_resolved and not _is_crisis_action(action_id):
 		_log("最终事件期间无法执行普通行动。")
 		_update_ui()
+		return
+	if action_id.begins_with(ITEM_ACTION_PREFIX):
+		_try_use_item(action_id.substr(ITEM_ACTION_PREFIX.length()))
 		return
 	match action_id:
 		"move":
@@ -280,10 +305,14 @@ func _on_map_action_requested(action_id: String) -> void:
 			_try_build_secret_shrine()
 		"enter_encounter":
 			_try_enter_encounter()
-		"resolve_cleanse_plague", "resolve_prayer_circle", "resolve_death_authority", "resolve_hidden_escape", "resolve_plague_failure":
-			_try_resolve_stage_crisis(action_id)
 		"end_turn":
 			end_turn()
+		_:
+			if _is_crisis_action(action_id):
+				_try_resolve_stage_crisis(action_id)
+			else:
+				_log("未知行动：%s。" % action_id)
+				_update_ui()
 
 
 func _on_card_effects_applied(effects: Array, source: Dictionary) -> void:
@@ -352,6 +381,8 @@ func _format_card_effect_log_prefix(source: Dictionary) -> String:
 	match str(source.get("type", "")):
 		"turn_event", "turn_event_handled", "turn_event_converted", "turn_event_exploited":
 			return "事件："
+		"turn_event_route_bonus":
+			return "路线加成："
 		"final_event":
 			return "结局："
 		_:
@@ -464,7 +495,16 @@ func _try_respond_pending_event(mode: String, action_id: String) -> void:
 		_update_ui()
 		return
 	map_state.spend_action_points(int(result.get("cost", 1)))
+	var pending_event: Dictionary = card_controller.pending_event.duplicate(true) if card_controller != null else {}
+	var route_bonus_effects: Array = _pending_event_route_bonus_effects(pending_event, mode)
 	if card_controller != null and card_controller.resolve_pending_event(mode):
+		if not route_bonus_effects.is_empty():
+			card_controller.apply_external_effects(route_bonus_effects, {
+				"type": "turn_event_route_bonus",
+				"id": str(pending_event.get("id", "")),
+				"name": str(pending_event.get("name", "")),
+				"mode": mode,
+			})
 		_log(_pending_event_response_log(mode))
 	else:
 		_log("没有可处理的事件预兆。")
@@ -511,8 +551,331 @@ func _try_enter_encounter() -> void:
 	_update_after_map_change()
 
 
+func _try_use_item(item_id: String) -> void:
+	var result := _evaluate_item_use(item_id)
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法使用物品。")))
+		_update_ui()
+		return
+	if not map_state.remove_item(item_id, 1):
+		_log("背包中没有可用的%s。" % _get_item_name(item_id))
+		_update_ui()
+		return
+	map_state.spend_action_points(int(result.get("cost", 0)))
+	var item_def: Dictionary = item_defs.get(item_id, {})
+	var effects: Array = item_def.get("use_effects", [])
+	_apply_item_use_effects(effects)
+	var summary := str(result.get("summary", ""))
+	_log("使用物品：%s%s。" % [
+		_get_item_name(item_id),
+		"（%s）" % summary if not summary.is_empty() else "",
+	])
+	_update_after_map_change()
+
+
+func _open_stage_rewards(result_id: String) -> void:
+	map_state.stage_reward_options.clear()
+	for reward_id in stage_reward_defs.keys():
+		var reward_def: Dictionary = stage_reward_defs[reward_id]
+		var result_ids: Array = reward_def.get("result_ids", [])
+		if result_ids.is_empty() or result_ids.has(result_id):
+			map_state.stage_reward_options.append(reward_def.duplicate(true))
+	if map_state.stage_reward_options.is_empty():
+		map_state.stage_reward_pending = false
+		map_state.stage_reward_claimed = true
+		return
+	map_state.stage_reward_pending = true
+	map_state.stage_reward_claimed = false
+	_log("阶段奖励：选择一种奖励，决定病村事件留下什么成长。")
+
+
+func _try_claim_stage_reward(reward_id: String) -> void:
+	var result := _evaluate_reward_action(reward_id)
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法领取奖励。")))
+		_update_ui()
+		return
+	var reward_def := _find_stage_reward_option(reward_id)
+	_apply_stage_reward_effects(reward_def.get("effects", []))
+	map_state.stage_reward_pending = false
+	map_state.stage_reward_claimed = true
+	map_state.stage_reward_options.clear()
+	_log("领取奖励：%s。" % str(reward_def.get("name", reward_id)))
+	_open_next_stage_nodes()
+	_update_after_map_change()
+
+
+func _evaluate_reward_action(reward_id: String) -> Dictionary:
+	var reward_def := _find_stage_reward_option(reward_id)
+	var enabled := true
+	var reason := ""
+	if reward_def.is_empty():
+		enabled = false
+		reason = "奖励不存在"
+	elif not map_state.stage_reward_pending:
+		enabled = false
+		reason = "当前没有待领取奖励"
+	return {
+		"id": REWARD_ACTION_PREFIX + reward_id,
+		"label": str(reward_def.get("name", reward_id)),
+		"enabled": enabled,
+		"reason": reason,
+		"cost": 0,
+		"description": str(reward_def.get("description", "")),
+		"summary": _summarize_item_effects(reward_def.get("effects", [])),
+	}
+
+
+func _find_stage_reward_option(reward_id: String) -> Dictionary:
+	for reward in map_state.stage_reward_options:
+		if typeof(reward) == TYPE_DICTIONARY and str(reward.get("id", "")) == reward_id:
+			return reward
+	return {}
+
+
+func _apply_stage_effects(effects: Array) -> void:
+	_apply_stage_reward_effects(effects)
+
+
+func _apply_stage_reward_effects(effects: Array) -> void:
+	var card_resource_deltas := {}
+	var card_progress_deltas := {}
+	var current_tile: RefCounted = tiles.get(map_state.player_coord)
+	for effect in effects:
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+		var scope := str(effect.get("scope", ""))
+		var delta := int(effect.get("delta", 0))
+		match scope:
+			"player_life":
+				if delta >= 0:
+					map_state.heal(delta)
+				else:
+					map_state.take_damage(abs(delta))
+			"experience":
+				map_state.gain_experience(delta)
+			"global_resource":
+				map_state.change_global_resource(str(effect.get("key", "")), delta)
+			"card_resource":
+				var resource_key := str(effect.get("key", ""))
+				card_resource_deltas[resource_key] = int(card_resource_deltas.get(resource_key, 0)) + delta
+			"card_progress":
+				var progress_key := str(effect.get("key", ""))
+				card_progress_deltas[progress_key] = int(card_progress_deltas.get(progress_key, 0)) + delta
+			"route_affinity":
+				map_state.change_route_affinity(str(effect.get("route", "")), delta)
+			"route_bonus_threshold":
+				map_state.change_route_bonus_threshold(str(effect.get("route", "")), delta)
+			"secrecy_pressure":
+				map_state.change_secrecy_pressure(delta)
+			"inventory":
+				var item_id := str(effect.get("item", ""))
+				if delta >= 0:
+					map_state.add_item(item_id, delta)
+				else:
+					map_state.remove_item(item_id, abs(delta))
+			"tile_state":
+				if current_tile != null:
+					_apply_tile_state_effect(current_tile, effect)
+			"tile_population":
+				if current_tile != null:
+					current_tile.population = max(0, current_tile.population + delta)
+			"tile_claim":
+				if current_tile != null:
+					current_tile.claim(PLAYER_OWNER)
+			"tile_building":
+				if current_tile != null:
+					var only_if_empty := bool(effect.get("if_empty", false))
+					if not only_if_empty or not current_tile.has_core_building():
+						_apply_tile_building_effect(current_tile, {
+							"op": "add",
+							"building": str(effect.get("building", "")),
+						})
+			"card_discard":
+				if card_controller != null:
+					card_controller.grant_card_to_discard(str(effect.get("card_id", "")))
+			"sanity_status":
+				map_state.sanity_status = str(effect.get("value", map_state.sanity_status))
+			"event_summary":
+				map_state.event_summary = str(effect.get("text", map_state.event_summary))
+			"log":
+				_log(str(effect.get("text", "")))
+	if card_controller != null:
+		card_controller.apply_external_deltas(card_resource_deltas, card_progress_deltas)
+	_sync_sanity_status_from_cards()
+
+
+func _open_next_stage_nodes() -> void:
+	map_state.stage_node_options.clear()
+	for node_id in stage_node_defs.keys():
+		var node_def: Dictionary = stage_node_defs[node_id]
+		map_state.stage_node_options.append(node_def.duplicate(true))
+	if map_state.stage_node_options.is_empty():
+		map_state.stage_node_pending = false
+		return
+	map_state.stage_node_pending = true
+	_log("新的节点显现：选择下一处要介入的地点。")
+
+
+func _try_choose_stage_node(node_id: String) -> void:
+	var result := _evaluate_node_action(node_id)
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法选择节点。")))
+		_update_ui()
+		return
+	var node_def := _find_stage_node_option(node_id)
+	_start_stage_node(node_def)
+	_update_after_map_change()
+
+
+func _evaluate_node_action(node_id: String) -> Dictionary:
+	var node_def := _find_stage_node_option(node_id)
+	var enabled := true
+	var reason := ""
+	if node_def.is_empty():
+		enabled = false
+		reason = "节点不存在"
+	elif not map_state.stage_node_pending:
+		enabled = false
+		reason = "当前没有待选择节点"
+	return {
+		"id": NODE_ACTION_PREFIX + node_id,
+		"label": str(node_def.get("name", node_id)),
+		"enabled": enabled,
+		"reason": reason,
+		"cost": 0,
+		"description": str(node_def.get("description", "")),
+		"summary": _summarize_item_effects(node_def.get("effects", [])),
+	}
+
+
+func _find_stage_node_option(node_id: String) -> Dictionary:
+	for node in map_state.stage_node_options:
+		if typeof(node) == TYPE_DICTIONARY and str(node.get("id", "")) == node_id:
+			return node
+	return {}
+
+
+func _start_stage_node(node_def: Dictionary) -> void:
+	var node_id := str(node_def.get("id", ""))
+	map_state.stage_node_pending = false
+	map_state.stage_node_options.clear()
+	map_state.stage_node_id = node_id
+	map_state.stage_node_name = str(node_def.get("name", node_id))
+	map_state.crisis_active = false
+	map_state.stage_resolved = false
+	map_state.stage_result_id = ""
+	map_state.stage_reward_pending = false
+	map_state.stage_reward_claimed = false
+	map_state.stage_reward_options.clear()
+	map_state.event_key = str(node_def.get("event_key", "plague_outbreak"))
+	map_state.event_countdown = int(node_def.get("turn_limit", 6))
+	map_state.event_countdown_template = str(node_def.get("summary_template", "阶段危机将在 {countdown} 回合后爆发"))
+	map_state.event_crisis_summary = str(node_def.get("crisis_summary", "最终事件爆发，选择处理方式"))
+	map_state.event_crisis_log = str(node_def.get("crisis_log", "阶段事件爆发。前期准备将决定你能选择哪种结局。"))
+	map_state.event_summary = _format_stage_countdown_summary()
+	map_state.reset_action_points()
+	if card_controller != null:
+		card_controller.start_demo(
+			str(node_def.get("encounter_id", "sick_village")),
+			_get_stage_turn_events(map_state.event_key),
+			map_state.event_key
+		)
+		card_controller.countdown = map_state.event_countdown
+		card_controller._emit_state()
+	_apply_stage_transition_effects(node_def.get("effects", []))
+	_sync_card_global_resources_from_map()
+	_select_tile(map_state.player_coord)
+	_log("进入节点：%s。" % map_state.stage_node_name)
+
+
+func _apply_stage_transition_effects(effects: Array) -> void:
+	_apply_stage_reward_effects(effects)
+
+
+func _evaluate_item_use(item_id: String) -> Dictionary:
+	var item_def: Dictionary = item_defs.get(item_id, {})
+	var effects: Array = item_def.get("use_effects", [])
+	var label := str(item_def.get("use_label", "使用"))
+	var cost := int(item_def.get("use_action_point_cost", 1))
+	var quantity := int(map_state.inventory.get(item_id, 0))
+	var enabled := true
+	var reason := ""
+	if item_def.is_empty() or effects.is_empty():
+		enabled = false
+		reason = "暂不可使用"
+	elif map_state.stage_node_pending:
+		enabled = false
+		reason = "先选节点"
+	elif map_state.stage_reward_pending:
+		enabled = false
+		reason = "先选奖励"
+	elif map_state.crisis_active and not map_state.stage_resolved:
+		enabled = false
+		reason = "最终事件期间不可使用"
+	elif quantity <= 0:
+		enabled = false
+		reason = "背包中没有该物品"
+	elif cost > 0 and not map_state.can_spend_action_points(cost):
+		enabled = false
+		reason = "行动点不足"
+	return {
+		"id": ITEM_ACTION_PREFIX + item_id,
+		"label": label,
+		"enabled": enabled,
+		"reason": reason,
+		"cost": cost,
+		"summary": _summarize_item_effects(effects),
+	}
+
+
+func _apply_item_use_effects(effects: Array) -> void:
+	var card_resource_deltas := {}
+	var card_progress_deltas := {}
+	var current_tile: RefCounted = tiles.get(map_state.player_coord)
+	for effect in effects:
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+		var scope := str(effect.get("scope", ""))
+		var delta := int(effect.get("delta", 0))
+		match scope:
+			"player_life":
+				if delta >= 0:
+					map_state.heal(delta)
+				else:
+					map_state.take_damage(abs(delta))
+			"global_resource":
+				map_state.change_global_resource(str(effect.get("key", "")), delta)
+			"card_resource":
+				var resource_key := str(effect.get("key", ""))
+				card_resource_deltas[resource_key] = int(card_resource_deltas.get(resource_key, 0)) + delta
+			"card_progress":
+				var progress_key := str(effect.get("key", ""))
+				card_progress_deltas[progress_key] = int(card_progress_deltas.get(progress_key, 0)) + delta
+			"route_affinity":
+				map_state.change_route_affinity(str(effect.get("route", "")), delta)
+			"route_bonus_threshold":
+				map_state.change_route_bonus_threshold(str(effect.get("route", "")), delta)
+			"secrecy_pressure":
+				map_state.change_secrecy_pressure(delta)
+			"tile_state":
+				if current_tile != null:
+					_apply_tile_state_effect(current_tile, effect)
+			"inventory":
+				var item_id := str(effect.get("item", ""))
+				if delta >= 0:
+					map_state.add_item(item_id, delta)
+				else:
+					map_state.remove_item(item_id, abs(delta))
+			"log":
+				_log(str(effect.get("text", "")))
+	if card_controller != null:
+		card_controller.apply_external_deltas(card_resource_deltas, card_progress_deltas)
+	_sync_sanity_status_from_cards()
+
+
 func _evaluate_action(action_id: String) -> Dictionary:
-	if CRISIS_ACTION_IDS.has(action_id):
+	if _is_crisis_action(action_id):
 		return _evaluate_crisis_action(action_id)
 	var def: Dictionary = map_action_defs.get(action_id, {})
 	var cost := int(def.get("action_point_cost", 1))
@@ -629,10 +992,23 @@ func _evaluate_action(action_id: String) -> Dictionary:
 
 
 func _build_actions() -> Array:
+	if map_state.stage_node_pending:
+		var node_actions: Array = []
+		for node in map_state.stage_node_options:
+			if typeof(node) == TYPE_DICTIONARY:
+				node_actions.append(_evaluate_node_action(str(node.get("id", ""))))
+		return node_actions
+	if map_state.stage_reward_pending:
+		var reward_actions: Array = []
+		for reward in map_state.stage_reward_options:
+			if typeof(reward) == TYPE_DICTIONARY:
+				reward_actions.append(_evaluate_reward_action(str(reward.get("id", ""))))
+		return reward_actions
 	if map_state.crisis_active and not map_state.stage_resolved:
 		var crisis_actions: Array = []
-		for action_id in CRISIS_ACTION_IDS:
-			crisis_actions.append(_evaluate_action(action_id))
+		for action in _get_current_crisis_actions():
+			if typeof(action) == TYPE_DICTIONARY:
+				crisis_actions.append(_evaluate_crisis_action(str(action.get("id", ""))))
 		return crisis_actions
 	return [
 		_evaluate_action("move"),
@@ -679,10 +1055,18 @@ func _build_ui_snapshot() -> Dictionary:
 		"inventory": _build_inventory_snapshot(),
 		"event_countdown": map_state.event_countdown,
 		"event_summary": map_state.event_summary,
+		"stage_node_id": map_state.stage_node_id,
+		"stage_node_name": map_state.stage_node_name,
+		"stage_node_pending": map_state.stage_node_pending,
+		"stage_node_options": _build_stage_node_snapshot(),
 		"crisis_active": map_state.crisis_active,
 		"stage_resolved": map_state.stage_resolved,
 		"stage_result_id": map_state.stage_result_id,
+		"stage_reward_pending": map_state.stage_reward_pending,
+		"stage_reward_claimed": map_state.stage_reward_claimed,
+		"stage_reward_options": _build_stage_reward_snapshot(),
 		"route_affinity": map_state.route_affinity.duplicate(),
+		"route_bonus_threshold_mods": map_state.route_bonus_threshold_mods.duplicate(),
 		"crisis_preview": _build_crisis_preview(),
 		"pending_event": card_controller.pending_event.duplicate(true) if card_controller != null else {},
 		"pending_event_response_preview": _build_pending_event_response_preview(),
@@ -697,13 +1081,56 @@ func _build_inventory_snapshot() -> Array:
 	var entries: Array = []
 	for item_id in map_state.inventory.keys():
 		var key := str(item_id)
+		var use_state := _evaluate_item_use(key)
 		entries.append({
 			"id": key,
 			"name": _get_item_name(key),
 			"quantity": int(map_state.inventory[item_id]),
 			"description": str(item_defs.get(key, {}).get("description", "")),
+			"use_action_id": str(use_state.get("id", "")),
+			"use_label": str(use_state.get("label", "使用")),
+			"use_enabled": bool(use_state.get("enabled", false)),
+			"use_reason": str(use_state.get("reason", "")),
+			"use_effect_summary": str(use_state.get("summary", "")),
 		})
 	entries.sort_custom(func(a: Dictionary, b: Dictionary): return str(a.get("name", "")) < str(b.get("name", "")))
+	return entries
+
+
+func _build_stage_reward_snapshot() -> Array:
+	var entries: Array = []
+	for reward in map_state.stage_reward_options:
+		if typeof(reward) != TYPE_DICTIONARY:
+			continue
+		var reward_id := str(reward.get("id", ""))
+		var action := _evaluate_reward_action(reward_id)
+		entries.append({
+			"id": reward_id,
+			"name": str(reward.get("name", reward_id)),
+			"description": str(reward.get("description", "")),
+			"effect_summary": str(action.get("summary", "")),
+			"action_id": str(action.get("id", "")),
+			"enabled": bool(action.get("enabled", false)),
+		})
+	return entries
+
+
+func _build_stage_node_snapshot() -> Array:
+	var entries: Array = []
+	for node in map_state.stage_node_options:
+		if typeof(node) != TYPE_DICTIONARY:
+			continue
+		var node_id := str(node.get("id", ""))
+		var action := _evaluate_node_action(node_id)
+		entries.append({
+			"id": node_id,
+			"name": str(node.get("name", node_id)),
+			"description": str(node.get("description", "")),
+			"effect_summary": str(action.get("summary", "")),
+			"action_id": str(action.get("id", "")),
+			"enabled": bool(action.get("enabled", false)),
+			"turn_limit": int(node.get("turn_limit", 0)),
+		})
 	return entries
 
 
@@ -741,7 +1168,7 @@ func _advance_stage_event() -> void:
 	if map_state.event_countdown <= 0 or map_state.stage_resolved:
 		return
 	map_state.event_countdown -= 1
-	map_state.event_summary = "瘟疫将在 %s 回合后全面爆发" % str(map_state.event_countdown)
+	map_state.event_summary = _format_stage_countdown_summary()
 	if map_state.event_countdown == 0:
 		_open_stage_crisis()
 
@@ -752,12 +1179,11 @@ func _open_stage_crisis() -> void:
 	var current_tile: RefCounted = tiles.get(map_state.player_coord)
 	if current_tile != null:
 		current_tile.explored = true
-		current_tile.add_state("plague")
-		current_tile.add_state("panic")
 	map_state.crisis_active = true
-	map_state.event_summary = "最终事件：疫病爆发，选择处理方式"
+	_apply_stage_effects(_get_current_crisis_def().get("open_effects", []))
+	map_state.event_summary = map_state.event_crisis_summary
 	map_state.sanity_status = "临界"
-	_log("阶段事件：疫病全面爆发。前几回合积累的线索、信仰、材料和隐秘状态将决定你能选择哪种结局。")
+	_log(map_state.event_crisis_log)
 
 
 func _try_resolve_stage_crisis(action_id: String) -> void:
@@ -770,49 +1196,17 @@ func _try_resolve_stage_crisis(action_id: String) -> void:
 
 
 func _evaluate_crisis_action(action_id: String) -> Dictionary:
-	var def: Dictionary = map_action_defs.get(action_id, {})
-	var label := str(def.get("name", action_id))
+	var action_def := _find_current_crisis_action(action_id)
+	var label := str(action_def.get("name", action_id))
 	var enabled: bool = map_state.crisis_active and not map_state.stage_resolved
 	var reason := ""
-	var context := _build_crisis_context()
-	match action_id:
-		"resolve_cleanse_plague":
-			if int(context.get("cure_progress", 0)) < 3:
-				enabled = false
-				reason = "治疗进度需要 3"
-			elif int(context.get("source_clues", 0)) < 2:
-				enabled = false
-				reason = "病源线索需要 2"
-		"resolve_prayer_circle":
-			if int(context.get("followers", 0)) < 2:
-				enabled = false
-				reason = "信徒需要 2"
-			elif int(context.get("faith", 0)) < 4:
-				enabled = false
-				reason = "信仰需要 4"
-			elif int(context.get("public_trust", 0)) < 1:
-				enabled = false
-				reason = "需要村民信任"
-		"resolve_death_authority":
-			if int(context.get("death_route", 0)) < 3:
-				enabled = false
-				reason = "死亡倾向需要 3"
-			elif int(context.get("materials", 0)) < 1:
-				enabled = false
-				reason = "材料需要 1"
-		"resolve_hidden_escape":
-			if int(context.get("exposure", 0)) > 1:
-				enabled = false
-				reason = "暴露不能高于 1"
-			elif int(context.get("source_clues", 0)) < 1 and int(context.get("suspicious_clue", 0)) < 1:
-				enabled = false
-				reason = "需要至少 1 个线索"
-		"resolve_plague_failure":
-			enabled = map_state.crisis_active and not map_state.stage_resolved
-			reason = ""
-		_:
-			enabled = false
-			reason = "未知结局"
+	if action_def.is_empty():
+		enabled = false
+		reason = "未知结局"
+	if enabled:
+		var requirement_result := _crisis_requirements_result(action_def.get("requirements", []))
+		enabled = bool(requirement_result.get("met", true))
+		reason = str(requirement_result.get("reason", ""))
 	if not map_state.crisis_active:
 		reason = "最终事件尚未爆发"
 	elif map_state.stage_resolved:
@@ -824,6 +1218,80 @@ func _evaluate_crisis_action(action_id: String) -> Dictionary:
 		"reason": reason,
 		"cost": 0,
 	}
+
+
+func _get_current_crisis_def() -> Dictionary:
+	return stage_crisis_defs.get(map_state.event_key, stage_crisis_defs.get("plague_outbreak", {}))
+
+
+func _get_current_crisis_actions() -> Array:
+	return _get_current_crisis_def().get("actions", [])
+
+
+func _get_stage_turn_events(event_key: String) -> Array:
+	var event_pool: Dictionary = stage_event_defs.get(event_key, {})
+	return event_pool.get("events", []).duplicate(true)
+
+
+func _find_current_crisis_action(action_id: String) -> Dictionary:
+	for action in _get_current_crisis_actions():
+		if typeof(action) == TYPE_DICTIONARY and str(action.get("id", "")) == action_id:
+			return action
+	return {}
+
+
+func _is_crisis_action(action_id: String) -> bool:
+	return not _find_current_crisis_action(action_id).is_empty()
+
+
+func _crisis_requirements_result(requirements: Array) -> Dictionary:
+	var context := _build_crisis_context()
+	for requirement in requirements:
+		if typeof(requirement) != TYPE_DICTIONARY:
+			continue
+		if _crisis_requirement_met(requirement, context):
+			continue
+		return {
+			"met": false,
+			"reason": str(requirement.get("reason", _format_requirement_reason(requirement, context))),
+		}
+	return {"met": true, "reason": ""}
+
+
+func _crisis_requirement_met(requirement: Dictionary, context: Dictionary) -> bool:
+	var key := str(requirement.get("key", ""))
+	var op := str(requirement.get("op", ">="))
+	var target := int(requirement.get("value", 0))
+	var actual := int(context.get(key, 0))
+	return _compare_int(actual, target, op)
+
+
+func _format_requirement_reason(requirement: Dictionary, context: Dictionary) -> String:
+	var key := str(requirement.get("key", ""))
+	var progress_name := _effect_progress_name(key)
+	var label := progress_name if progress_name != key else _effect_resource_name(key)
+	return "%s 需要 %s，当前 %s" % [
+		label,
+		str(int(requirement.get("value", 0))),
+		str(int(context.get(key, 0))),
+	]
+
+
+func _compare_int(actual: int, target: int, op: String) -> bool:
+	match op:
+		">=":
+			return actual >= target
+		"<=":
+			return actual <= target
+		">":
+			return actual > target
+		"<":
+			return actual < target
+		"==":
+			return actual == target
+		"!=":
+			return actual != target
+	return actual >= target
 
 
 func _build_crisis_context() -> Dictionary:
@@ -843,48 +1311,46 @@ func _build_crisis_context() -> Dictionary:
 	for key in map_state.global_resources.keys():
 		context[str(key)] = int(map_state.global_resources.get(key, 0))
 	context["suspicious_clue"] = int(map_state.inventory.get("suspicious_clue", 0))
+	context["usable_clues"] = max(int(context.get("source_clues", 0)), int(context.get("suspicious_clue", 0)))
 	context["secrecy_pressure"] = map_state.secrecy_pressure
 	return context
 
 
+func _format_stage_countdown_summary() -> String:
+	return map_state.event_countdown_template.replace("{countdown}", str(map_state.event_countdown))
+
+
 func _build_crisis_preview() -> Array:
 	var context := _build_crisis_context()
-	var source_clues := int(context.get("source_clues", 0))
-	var suspicious_clues := int(context.get("suspicious_clue", 0))
-	var usable_clues = max(source_clues, suspicious_clues)
-	return [
-		{
-			"id": "resolve_cleanse_plague",
-			"name": "净化疫病",
-			"ready": int(context.get("cure_progress", 0)) >= 3 and source_clues >= 2,
-			"status": "治疗 %s/3  线索 %s/2" % [str(int(context.get("cure_progress", 0))), str(source_clues)],
-		},
-		{
-			"id": "resolve_prayer_circle",
-			"name": "集体祈祷",
-			"ready": int(context.get("followers", 0)) >= 2 and int(context.get("faith", 0)) >= 4 and int(context.get("public_trust", 0)) >= 1,
-			"status": "信徒 %s/2  信仰 %s/4  信任 %s/1" % [
-				str(int(context.get("followers", 0))),
-				str(int(context.get("faith", 0))),
-				str(int(context.get("public_trust", 0))),
-			],
-		},
-		{
-			"id": "resolve_death_authority",
-			"name": "死亡回响",
-			"ready": int(context.get("death_route", 0)) >= 3 and int(context.get("materials", 0)) >= 1,
-			"status": "死亡 %s/3  材料 %s/1" % [
-				str(int(context.get("death_route", 0))),
-				str(int(context.get("materials", 0))),
-			],
-		},
-		{
-			"id": "resolve_hidden_escape",
-			"name": "隐秘撤离",
-			"ready": int(context.get("exposure", 0)) <= 1 and usable_clues >= 1,
-			"status": "暴露 %s/≤1  线索 %s/1" % [str(int(context.get("exposure", 0))), str(usable_clues)],
-		},
-	]
+	var previews: Array = []
+	for action in _get_current_crisis_actions():
+		if typeof(action) != TYPE_DICTIONARY:
+			continue
+		var preview_items: Array = action.get("preview", [])
+		if preview_items.is_empty():
+			continue
+		previews.append({
+			"id": str(action.get("id", "")),
+			"name": str(action.get("name", "")),
+			"ready": bool(_crisis_requirements_result(action.get("requirements", [])).get("met", true)),
+			"status": _format_crisis_preview_items(preview_items, context),
+		})
+	return previews
+
+
+func _format_crisis_preview_items(preview_items: Array, context: Dictionary) -> String:
+	var parts: Array[String] = []
+	for item in preview_items:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var key := str(item.get("key", ""))
+		var label := str(item.get("label", key))
+		var op := str(item.get("op", ">="))
+		var value := int(item.get("value", 0))
+		var actual := int(context.get(key, 0))
+		var target_text := "≤%s" % str(value) if op == "<=" else str(value)
+		parts.append("%s %s/%s" % [label, str(actual), target_text])
+	return "  ".join(parts)
 
 
 func _build_pending_event_response_preview() -> Array:
@@ -902,13 +1368,102 @@ func _build_pending_event_response_preview() -> Array:
 		var effects: Array = event.get(str(response.get("effects_key", "")), [])
 		if effects.is_empty():
 			continue
+		var mode := str(response.get("mode", ""))
+		var bonus_effects: Array = _pending_event_route_bonus_effects(event, mode)
+		var bonus_previews: Array = _pending_event_route_bonus_previews(event, mode)
+		var summary := _summarize_effects(effects)
+		var bonus_summary := _summarize_effects(bonus_effects) if not bonus_effects.is_empty() else ""
+		if not bonus_summary.is_empty():
+			summary += "；路线加成：" + bonus_summary
 		previews.append({
-			"mode": str(response.get("mode", "")),
+			"mode": mode,
 			"name": str(response.get("name", "")),
 			"cost": int(response.get("cost", 0)),
-			"summary": _summarize_effects(effects),
+			"summary": summary,
+			"bonus_summary": bonus_summary,
+			"route_bonus_preview": bonus_previews,
+			"route_bonus_status": _format_route_bonus_status(bonus_previews),
 		})
 	return previews
+
+
+func _pending_event_route_bonus_effects(event: Dictionary, mode: String) -> Array:
+	var effects: Array = []
+	for bonus in _active_pending_event_route_bonuses(event, mode):
+		var bonus_effects: Array = bonus.get("effects", [])
+		for effect in bonus_effects:
+			if typeof(effect) == TYPE_DICTIONARY:
+				effects.append(effect.duplicate(true))
+	return effects
+
+
+func _pending_event_route_bonus_previews(event: Dictionary, mode: String) -> Array:
+	if event.is_empty():
+		return []
+	var previews: Array = []
+	for bonus in event.get("route_bonuses", []):
+		if typeof(bonus) != TYPE_DICTIONARY:
+			continue
+		var bonus_mode := str(bonus.get("mode", ""))
+		if not bonus_mode.is_empty() and bonus_mode != mode:
+			continue
+		var route := str(bonus.get("route", ""))
+		var base_threshold := int(bonus.get("threshold", 1))
+		var threshold := _adjusted_route_bonus_threshold(route, base_threshold)
+		var current := int(map_state.route_affinity.get(route, 0))
+		var bonus_effects: Array = bonus.get("effects", [])
+		previews.append({
+			"name": str(bonus.get("name", _effect_route_name(route))),
+			"route": route,
+			"route_name": _effect_route_name(route),
+			"current": current,
+			"threshold": threshold,
+			"base_threshold": base_threshold,
+			"threshold_modifier": int(map_state.route_bonus_threshold_mods.get(route, 0)),
+			"active": current >= threshold,
+			"summary": _summarize_effects(bonus_effects),
+		})
+	return previews
+
+
+func _format_route_bonus_status(previews: Array) -> String:
+	if previews.is_empty():
+		return ""
+	var parts: Array[String] = []
+	for preview in previews:
+		if typeof(preview) != TYPE_DICTIONARY:
+			continue
+		var prefix := "已解锁" if bool(preview.get("active", false)) else "未解锁"
+		parts.append("%s %s %s/%s：%s" % [
+			prefix,
+			str(preview.get("route_name", "")),
+			str(preview.get("current", 0)),
+			str(preview.get("threshold", 0)),
+			str(preview.get("summary", "")),
+		])
+	return "；".join(parts)
+
+
+func _active_pending_event_route_bonuses(event: Dictionary, mode: String) -> Array:
+	if event.is_empty():
+		return []
+	var bonuses: Array = []
+	for bonus in event.get("route_bonuses", []):
+		if typeof(bonus) != TYPE_DICTIONARY:
+			continue
+		var bonus_mode := str(bonus.get("mode", ""))
+		if not bonus_mode.is_empty() and bonus_mode != mode:
+			continue
+		var route := str(bonus.get("route", ""))
+		var threshold := _adjusted_route_bonus_threshold(route, int(bonus.get("threshold", 1)))
+		if int(map_state.route_affinity.get(route, 0)) < threshold:
+			continue
+		bonuses.append(bonus)
+	return bonuses
+
+
+func _adjusted_route_bonus_threshold(route: String, base_threshold: int) -> int:
+	return max(0, base_threshold + int(map_state.route_bonus_threshold_mods.get(route, 0)))
 
 
 func _summarize_effects(effects: Array) -> String:
@@ -920,6 +1475,50 @@ func _summarize_effects(effects: Array) -> String:
 		if not text.is_empty():
 			parts.append(text)
 	return "；".join(parts) if not parts.is_empty() else "无直接后果"
+
+
+func _summarize_item_effects(effects: Array) -> String:
+	var parts: Array[String] = []
+	for effect in effects:
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+		var text := _summarize_item_effect(effect)
+		if not text.is_empty():
+			parts.append(text)
+	return "；".join(parts) if not parts.is_empty() else "无直接效果"
+
+
+func _summarize_item_effect(effect: Dictionary) -> String:
+	var scope := str(effect.get("scope", ""))
+	var delta := int(effect.get("delta", 0))
+	match scope:
+		"player_life":
+			return "生命 %s" % _signed_int(delta)
+		"experience":
+			return "经验 %s" % _signed_int(delta)
+		"global_resource":
+			return "%s %s" % [_effect_resource_name(str(effect.get("key", ""))), _signed_int(delta)]
+		"card_resource":
+			return "%s %s" % [_effect_resource_name(str(effect.get("key", ""))), _signed_int(delta)]
+		"card_progress":
+			return "%s %s" % [_effect_progress_name(str(effect.get("key", ""))), _signed_int(delta)]
+		"route_affinity":
+			return "%s %s" % [_effect_route_name(str(effect.get("route", ""))), _signed_int(delta)]
+		"route_bonus_threshold":
+			return "%s加成阈值 %s" % [_effect_route_name(str(effect.get("route", ""))), _signed_int(delta)]
+		"secrecy_pressure":
+			return "追踪压力 %s" % _signed_int(delta)
+		"tile_state":
+			var op := str(effect.get("op", "add"))
+			var prefix := "移除状态" if op == "remove" else "地块状态"
+			return "%s：%s" % [prefix, _state_name(str(effect.get("state", "")))]
+		"card_discard":
+			return "获得卡牌：%s" % _card_name(str(effect.get("card_id", "")))
+		"inventory":
+			return "%s %s" % [_get_item_name(str(effect.get("item", ""))), _signed_int(delta)]
+		"log":
+			return ""
+	return ""
 
 
 func _summarize_effect(effect: Dictionary) -> String:
@@ -963,6 +1562,8 @@ func _effect_progress_name(key: String) -> String:
 			return "治疗"
 		"source_clues":
 			return "线索"
+		"usable_clues":
+			return "线索"
 		"anchor_progress":
 			return "锚点"
 		"public_trust":
@@ -982,6 +1583,19 @@ func _effect_progress_name(key: String) -> String:
 	return key
 
 
+func _effect_route_name(route_id: String) -> String:
+	match route_id:
+		"life":
+			return "生命倾向"
+		"faith":
+			return "信仰倾向"
+		"death":
+			return "死亡倾向"
+		"secret":
+			return "隐秘倾向"
+	return route_id
+
+
 func _state_name(state_id: String) -> String:
 	return str(state_defs.get(state_id, {}).get("name", state_id))
 
@@ -999,76 +1613,16 @@ func _signed_int(value: int) -> String:
 
 
 func _resolve_stage_crisis(action_id: String) -> void:
-	var current_tile: RefCounted = tiles.get(map_state.player_coord)
+	var action_def := _find_current_crisis_action(action_id)
+	if action_def.is_empty():
+		_log("未知最终事件解法：%s。" % action_id)
+		_update_ui()
+		return
 	map_state.crisis_active = false
 	map_state.stage_resolved = true
 	map_state.stage_result_id = action_id
-	match action_id:
-		"resolve_cleanse_plague":
-			if current_tile != null:
-				current_tile.remove_state("plague")
-				current_tile.remove_state("polluted")
-				current_tile.remove_state("panic")
-				current_tile.add_state("blessed")
-				current_tile.claim(PLAYER_OWNER)
-			map_state.change_global_resource("faith", 2)
-			map_state.change_global_resource("followers", 1)
-			map_state.gain_experience(3)
-			map_state.change_route_affinity("life", 2)
-			map_state.sanity_status = "稳定"
-			map_state.event_summary = "病村被净化，治愈传说开始流传"
-			_log("最终事件：你净化了疫病。病村获得祝福，生命路线倾向上升。")
-		"resolve_prayer_circle":
-			if current_tile != null:
-				current_tile.remove_state("panic")
-				current_tile.add_state("anchor")
-				current_tile.claim(PLAYER_OWNER)
-				if not current_tile.has_core_building():
-					current_tile.add_building("secret_shrine", building_defs.get("secret_shrine", {}).get("yield_bonus", {}))
-			map_state.change_global_resource("faith", 3)
-			map_state.change_global_resource("followers", 2)
-			map_state.change_secrecy_pressure(1)
-			map_state.gain_experience(3)
-			map_state.change_route_affinity("faith", 2)
-			map_state.event_summary = "村民集体祈祷，病村成为神名锚点"
-			_log("最终事件：村民围成祈祷环呼唤你的名字。信仰路线倾向上升，但暴露风险也增加。")
-		"resolve_death_authority":
-			if current_tile != null:
-				current_tile.remove_state("plague")
-				current_tile.add_state("polluted")
-				current_tile.add_state("anchor")
-				current_tile.population = max(0, current_tile.population - 1)
-				current_tile.claim(PLAYER_OWNER)
-			map_state.change_global_resource("materials", -1)
-			map_state.change_global_resource("faith", 2)
-			map_state.change_secrecy_pressure(1)
-			map_state.gain_experience(3)
-			map_state.change_route_affinity("death", 3)
-			map_state.sanity_status = "洞见"
-			map_state.event_summary = "疫病被转化为死亡权柄的锚点"
-			_log("最终事件：你没有救下所有人，而是让死亡服从秩序。死亡路线倾向大幅上升。")
-		"resolve_hidden_escape":
-			if current_tile != null:
-				current_tile.add_state("plague")
-				current_tile.add_state("concealed_tracks")
-			map_state.add_item("suspicious_clue")
-			map_state.change_global_resource("materials", 1)
-			map_state.change_secrecy_pressure(-2)
-			map_state.gain_experience(1)
-			map_state.change_route_affinity("secret", 2)
-			map_state.event_summary = "你带走病源线索，病村仍陷入瘟疫"
-			_log("最终事件：你隐秘撤离，保住自身与线索，但病村没有被拯救。")
-		"resolve_plague_failure":
-			if current_tile != null:
-				current_tile.add_state("plague")
-				current_tile.add_state("panic")
-				current_tile.add_state("enemy_attention")
-				current_tile.population = max(0, current_tile.population - 1)
-			map_state.take_damage(2)
-			map_state.change_secrecy_pressure(2)
-			map_state.sanity_status = "动摇"
-			map_state.event_summary = "疫病失控，敌对势力注意到你的神迹"
-			_log("最终事件：疫病失控。你受伤并被更多敌对视线锁定。")
+	_apply_stage_effects(action_def.get("effects", []))
+	_open_stage_rewards(action_id)
 	_update_after_map_change()
 
 

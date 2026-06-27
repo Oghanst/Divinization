@@ -2,20 +2,66 @@
   {
     "id": "wild_grain_bundle",
     "name": "野谷袋",
-    "description": "可食用的野谷，后续可接入补给和交易。",
-    "source_resource": "wild_grain"
+    "description": "可食用的野谷，能够在危机中提供最基础的补给。",
+    "source_resource": "wild_grain",
+    "use_label": "充饥",
+    "use_action_point_cost": 0,
+    "use_effects": [
+      {
+        "scope": "player_life",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "你吃下粗糙的野谷，勉强恢复了一点体力。"
+      }
+    ]
   },
   {
     "id": "medicinal_herb_bundle",
     "name": "药草束",
-    "description": "粗略处理过的药草，后续可用于治疗或仪式。",
-    "source_resource": "medicinal_herb"
+    "description": "粗略处理过的药草，可以推进治疗准备。",
+    "source_resource": "medicinal_herb",
+    "use_label": "调成药汤",
+    "use_action_point_cost": 1,
+    "use_effects": [
+      {
+        "scope": "card_progress",
+        "key": "cure_progress",
+        "delta": 1
+      },
+      {
+        "scope": "player_life",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "你把药草调成苦涩的汤剂，治疗准备更扎实了。"
+      }
+    ]
   },
   {
     "id": "ancient_bark",
     "name": "古木皮",
     "description": "带有灵性纹理的树皮，适合做隐秘仪式材料。",
-    "source_resource": "ancient_tree"
+    "source_resource": "ancient_tree",
+    "use_label": "刻隐秘符",
+    "use_action_point_cost": 1,
+    "use_effects": [
+      {
+        "scope": "secrecy_pressure",
+        "delta": -1
+      },
+      {
+        "scope": "route_bonus_threshold",
+        "route": "secret",
+        "delta": -1
+      },
+      {
+        "scope": "log",
+        "text": "你在古木皮上刻下隐秘符号，追踪痕迹被削弱，隐秘回应更容易成形。"
+      }
+    ]
   },
   {
     "id": "stone_chunk",
@@ -26,24 +72,105 @@
   {
     "id": "cold_iron_ore",
     "name": "寒铁矿",
-    "description": "冰冷而沉重的矿石，后续可做装备或封印物。",
-    "source_resource": "cold_iron"
+    "description": "冰冷而沉重的矿石，可以打磨成简陋封印物。",
+    "source_resource": "cold_iron",
+    "use_label": "打磨封印物",
+    "use_action_point_cost": 1,
+    "use_effects": [
+      {
+        "scope": "card_progress",
+        "key": "source_clues",
+        "delta": 1
+      },
+      {
+        "scope": "route_affinity",
+        "route": "secret",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "寒铁短暂压住了异常波动，让病源线索显出轮廓。"
+      }
+    ]
   },
   {
     "id": "relic_fragment",
     "name": "圣物碎片",
     "description": "残缺的圣物碎片，可作为锚点或晋升素材。",
-    "source_resource": "relic_shard"
+    "source_resource": "relic_shard",
+    "use_label": "嵌入锚点",
+    "use_action_point_cost": 1,
+    "use_effects": [
+      {
+        "scope": "card_progress",
+        "key": "anchor_progress",
+        "delta": 1
+      },
+      {
+        "scope": "global_resource",
+        "key": "faith",
+        "delta": 1
+      },
+      {
+        "scope": "route_affinity",
+        "route": "faith",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "圣物碎片被嵌入临时锚点，微弱信仰开始聚拢。"
+      }
+    ]
   },
   {
     "id": "spring_water_vial",
     "name": "灵泉瓶",
-    "description": "封存在小瓶里的灵泉水。",
-    "source_resource": "spirit_spring"
+    "description": "封存在小瓶里的灵泉水，可以稳定肉身与认知。",
+    "source_resource": "spirit_spring",
+    "use_label": "饮下灵泉",
+    "use_action_point_cost": 0,
+    "use_effects": [
+      {
+        "scope": "player_life",
+        "delta": 2
+      },
+      {
+        "scope": "card_resource",
+        "key": "sanity",
+        "delta": 1
+      },
+      {
+        "scope": "tile_state",
+        "state": "polluted",
+        "op": "remove"
+      },
+      {
+        "scope": "log",
+        "text": "灵泉水压下了肉身里的寒意，也冲淡了脚下的污染。"
+      }
+    ]
   },
   {
     "id": "suspicious_clue",
     "name": "异常线索",
-    "description": "调查时获得的线索，可用于后续破解事件。"
+    "description": "调查时获得的线索，可以整理成病源判断。",
+    "use_label": "整理线索",
+    "use_action_point_cost": 1,
+    "use_effects": [
+      {
+        "scope": "card_progress",
+        "key": "source_clues",
+        "delta": 1
+      },
+      {
+        "scope": "route_affinity",
+        "route": "secret",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "你把零散异常整理成病源判断，隐秘路线也更清晰。"
+      }
+    ]
   }
 ]

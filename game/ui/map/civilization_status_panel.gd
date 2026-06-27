@@ -97,10 +97,11 @@ func _format_header(snapshot: Dictionary) -> String:
 		if not pending.get("exploited_effects", []).is_empty():
 			options.append("利用")
 		pending_line = "\n预兆：%s（%s）" % [str(pending.get("name", "")), " / ".join(options)]
-	return "第 %s 回合  行动点 %s/%s\n信仰 %s  材料 %s  信徒 %s\n%s %s：%s%s" % [
+	return "第 %s 回合  行动点 %s/%s\n节点：%s\n信仰 %s  材料 %s  信徒 %s\n%s %s：%s%s" % [
 		str(snapshot.get("turn", 1)),
 		str(snapshot.get("action_points", 0)),
 		str(snapshot.get("max_action_points", 0)),
+		str(snapshot.get("stage_node_name", "病村")),
 		str(resources.get("faith", 0)),
 		str(resources.get("materials", 0)),
 		str(resources.get("followers", 0)),
@@ -129,8 +130,32 @@ func _format_player(snapshot: Dictionary) -> String:
 
 
 func _format_crisis_preview(snapshot: Dictionary) -> String:
+	if bool(snapshot.get("stage_node_pending", false)):
+		var node_lines: Array[String] = ["选择下个节点"]
+		for node in snapshot.get("stage_node_options", []):
+			if typeof(node) != TYPE_DICTIONARY:
+				continue
+			node_lines.append("%s（%s 回合）：%s" % [
+				str(node.get("name", "")),
+				str(node.get("turn_limit", 0)),
+				str(node.get("effect_summary", "")),
+			])
+		return "\n".join(node_lines)
 	if bool(snapshot.get("stage_resolved", false)):
-		return "阶段结果：%s" % str(snapshot.get("event_summary", ""))
+		var reward_lines: Array[String] = ["阶段结果：%s" % str(snapshot.get("event_summary", ""))]
+		var rewards: Array = snapshot.get("stage_reward_options", [])
+		if bool(snapshot.get("stage_reward_pending", false)) and not rewards.is_empty():
+			reward_lines.append("选择奖励")
+			for reward in rewards:
+				if typeof(reward) != TYPE_DICTIONARY:
+					continue
+				reward_lines.append("%s：%s" % [
+					str(reward.get("name", "")),
+					str(reward.get("effect_summary", "")),
+				])
+		elif bool(snapshot.get("stage_reward_claimed", false)):
+			reward_lines.append("奖励已领取")
+		return "\n".join(reward_lines)
 	var previews: Array = snapshot.get("crisis_preview", [])
 	if previews.is_empty():
 		return ""

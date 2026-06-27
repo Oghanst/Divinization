@@ -1,0 +1,188 @@
+[
+  {
+    "id": "village_gratitude_followers",
+    "name": "感激的信众",
+    "description": "救下或稳住病村后，一批村民愿意追随你的神名。",
+    "result_ids": [
+      "resolve_cleanse_plague",
+      "resolve_prayer_circle",
+      "resolve_seal_old_well",
+      "resolve_sanctify_graves",
+      "resolve_stabilize_anchor",
+      "resolve_awaken_shrine"
+    ],
+    "effects": [
+      {
+        "scope": "global_resource",
+        "key": "followers",
+        "delta": 2
+      },
+      {
+        "scope": "global_resource",
+        "key": "faith",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "几个病愈的村民低声记住了你的名字。"
+      }
+    ]
+  },
+  {
+    "id": "weak_heal_card_reward",
+    "name": "治愈神术",
+    "description": "把一张微弱治愈加入弃牌堆，并强化生命路线倾向。",
+    "result_ids": [
+      "resolve_cleanse_plague",
+      "resolve_prayer_circle",
+      "resolve_seal_old_well",
+      "resolve_sanctify_graves"
+    ],
+    "effects": [
+      {
+        "scope": "card_discard",
+        "card_id": "weak_heal"
+      },
+      {
+        "scope": "route_affinity",
+        "route": "life",
+        "delta": 1
+      },
+      {
+        "scope": "experience",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "你把治愈病人的经验固化成一式稳定神术。"
+      }
+    ]
+  },
+  {
+    "id": "anchor_relic_fragment",
+    "name": "锚点圣物",
+    "description": "获得圣物碎片，并让信仰锚点更稳固。",
+    "result_ids": [
+      "resolve_prayer_circle",
+      "resolve_death_authority",
+      "resolve_hidden_escape",
+      "resolve_stabilize_anchor",
+      "resolve_awaken_shrine",
+      "resolve_harvest_grave_relics"
+    ],
+    "effects": [
+      {
+        "scope": "inventory",
+        "item": "relic_fragment",
+        "delta": 1
+      },
+      {
+        "scope": "card_progress",
+        "key": "anchor_progress",
+        "delta": 1
+      },
+      {
+        "scope": "route_affinity",
+        "route": "faith",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "病村残留的信仰凝成一枚可携带的锚点碎片。"
+      }
+    ]
+  },
+  {
+    "id": "source_name_fragment",
+    "name": "病源真名残片",
+    "description": "获得异常线索，并推进病源判断与隐秘路线。",
+    "result_ids": [
+      "resolve_cleanse_plague",
+      "resolve_hidden_escape",
+      "resolve_claim_source_name",
+      "resolve_seal_old_well",
+      "resolve_harvest_grave_relics",
+      "resolve_conceal_shrine"
+    ],
+    "effects": [
+      {
+        "scope": "inventory",
+        "item": "suspicious_clue",
+        "delta": 1
+      },
+      {
+        "scope": "card_progress",
+        "key": "source_clues",
+        "delta": 1
+      },
+      {
+        "scope": "route_affinity",
+        "route": "secret",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "你从病源残响中记下一个不能公开念出的名字。"
+      }
+    ]
+  },
+  {
+    "id": "death_whisper_card_reward",
+    "name": "死者低语",
+    "description": "把死亡转移加入弃牌堆，并强化死亡路线倾向。",
+    "result_ids": [
+      "resolve_death_authority",
+      "resolve_plague_failure",
+      "resolve_well_death_sacrifice",
+      "resolve_command_grave_dead",
+      "resolve_old_well_failure",
+      "resolve_graveyard_failure"
+    ],
+    "effects": [
+      {
+        "scope": "card_discard",
+        "card_id": "death_transfer"
+      },
+      {
+        "scope": "route_affinity",
+        "route": "death",
+        "delta": 2
+      },
+      {
+        "scope": "log",
+        "text": "死者没有完全安静，他们教会你如何转移痛苦。"
+      }
+    ]
+  },
+  {
+    "id": "plague_salvage_materials",
+    "name": "疫病残材",
+    "description": "从失控或转化的疫病中带走可用于仪式的材料。",
+    "result_ids": [
+      "resolve_death_authority",
+      "resolve_hidden_escape",
+      "resolve_plague_failure",
+      "resolve_claim_source_name",
+      "resolve_well_death_sacrifice",
+      "resolve_old_well_failure",
+      "resolve_graveyard_failure",
+      "resolve_shrine_failure"
+    ],
+    "effects": [
+      {
+        "scope": "global_resource",
+        "key": "materials",
+        "delta": 2
+      },
+      {
+        "scope": "inventory",
+        "item": "medicinal_herb_bundle",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "你从疫病废墟里收起仍有用处的残材。"
+      }
+    ]
+  }
+]

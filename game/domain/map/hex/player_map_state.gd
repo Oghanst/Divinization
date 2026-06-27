@@ -17,7 +17,20 @@ var secrecy_pressure: int = 2
 var crisis_active: bool = false
 var stage_resolved: bool = false
 var stage_result_id: String = ""
+var stage_reward_pending: bool = false
+var stage_reward_claimed: bool = false
+var stage_reward_options: Array = []
+var stage_node_pending: bool = false
+var stage_node_options: Array = []
+var stage_node_id: String = "sick_village"
+var stage_node_name: String = "病村"
 var route_affinity := {
+	"life": 0,
+	"faith": 0,
+	"death": 0,
+	"secret": 0,
+}
+var route_bonus_threshold_mods := {
 	"life": 0,
 	"faith": 0,
 	"death": 0,
@@ -30,6 +43,9 @@ var global_resources := {
 }
 var event_key: String = "plague_outbreak"
 var event_countdown: int = 6
+var event_countdown_template: String = "瘟疫将在 {countdown} 回合后全面爆发"
+var event_crisis_summary: String = "最终事件：疫病爆发，选择处理方式"
+var event_crisis_log: String = "阶段事件：疫病全面爆发。前几回合积累的线索、信仰、材料和隐秘状态将决定你能选择哪种结局。"
 var event_summary: String = "瘟疫将在 6 回合后全面爆发"
 
 
@@ -102,3 +118,9 @@ func change_route_affinity(route_id: String, delta: int) -> void:
 	if route_id.is_empty():
 		return
 	route_affinity[route_id] = max(0, int(route_affinity.get(route_id, 0)) + delta)
+
+
+func change_route_bonus_threshold(route_id: String, delta: int) -> void:
+	if route_id.is_empty():
+		return
+	route_bonus_threshold_mods[route_id] = int(route_bonus_threshold_mods.get(route_id, 0)) + delta

@@ -1,0 +1,397 @@
+[
+  {
+    "id": "plague_outbreak",
+    "name": "疫病爆发",
+    "open_effects": [
+      {"scope": "tile_state", "state": "plague"},
+      {"scope": "tile_state", "state": "panic"}
+    ],
+    "actions": [
+      {
+        "id": "resolve_cleanse_plague",
+        "name": "净化疫病",
+        "requirements": [
+          {"key": "cure_progress", "op": ">=", "value": 3, "reason": "治疗进度需要 3"},
+          {"key": "source_clues", "op": ">=", "value": 2, "reason": "病源线索需要 2"}
+        ],
+        "preview": [
+          {"key": "cure_progress", "label": "治疗", "value": 3},
+          {"key": "source_clues", "label": "线索", "value": 2}
+        ],
+        "effects": [
+          {"scope": "tile_state", "state": "plague", "op": "remove"},
+          {"scope": "tile_state", "state": "polluted", "op": "remove"},
+          {"scope": "tile_state", "state": "panic", "op": "remove"},
+          {"scope": "tile_state", "state": "blessed"},
+          {"scope": "tile_claim"},
+          {"scope": "global_resource", "key": "faith", "delta": 2},
+          {"scope": "global_resource", "key": "followers", "delta": 1},
+          {"scope": "experience", "delta": 3},
+          {"scope": "route_affinity", "route": "life", "delta": 2},
+          {"scope": "sanity_status", "value": "稳定"},
+          {"scope": "event_summary", "text": "病村被净化，治愈传说开始流传"},
+          {"scope": "log", "text": "最终事件：你净化了疫病。病村获得祝福，生命路线倾向上升。"}
+        ]
+      },
+      {
+        "id": "resolve_prayer_circle",
+        "name": "集体祈祷",
+        "requirements": [
+          {"key": "followers", "op": ">=", "value": 2, "reason": "信徒需要 2"},
+          {"key": "faith", "op": ">=", "value": 4, "reason": "信仰需要 4"},
+          {"key": "public_trust", "op": ">=", "value": 1, "reason": "需要村民信任"}
+        ],
+        "preview": [
+          {"key": "followers", "label": "信徒", "value": 2},
+          {"key": "faith", "label": "信仰", "value": 4},
+          {"key": "public_trust", "label": "信任", "value": 1}
+        ],
+        "effects": [
+          {"scope": "tile_state", "state": "panic", "op": "remove"},
+          {"scope": "tile_state", "state": "anchor"},
+          {"scope": "tile_claim"},
+          {"scope": "tile_building", "building": "secret_shrine", "if_empty": true},
+          {"scope": "global_resource", "key": "faith", "delta": 3},
+          {"scope": "global_resource", "key": "followers", "delta": 2},
+          {"scope": "secrecy_pressure", "delta": 1},
+          {"scope": "experience", "delta": 3},
+          {"scope": "route_affinity", "route": "faith", "delta": 2},
+          {"scope": "event_summary", "text": "村民集体祈祷，病村成为神名锚点"},
+          {"scope": "log", "text": "最终事件：村民围成祈祷环呼唤你的名字。信仰路线倾向上升，但暴露风险也增加。"}
+        ]
+      },
+      {
+        "id": "resolve_death_authority",
+        "name": "死亡回响",
+        "requirements": [
+          {"key": "death_route", "op": ">=", "value": 3, "reason": "死亡倾向需要 3"},
+          {"key": "materials", "op": ">=", "value": 1, "reason": "材料需要 1"}
+        ],
+        "preview": [
+          {"key": "death_route", "label": "死亡", "value": 3},
+          {"key": "materials", "label": "材料", "value": 1}
+        ],
+        "effects": [
+          {"scope": "tile_state", "state": "plague", "op": "remove"},
+          {"scope": "tile_state", "state": "polluted"},
+          {"scope": "tile_state", "state": "anchor"},
+          {"scope": "tile_population", "delta": -1},
+          {"scope": "tile_claim"},
+          {"scope": "global_resource", "key": "materials", "delta": -1},
+          {"scope": "global_resource", "key": "faith", "delta": 2},
+          {"scope": "secrecy_pressure", "delta": 1},
+          {"scope": "experience", "delta": 3},
+          {"scope": "route_affinity", "route": "death", "delta": 3},
+          {"scope": "sanity_status", "value": "洞见"},
+          {"scope": "event_summary", "text": "疫病被转化为死亡权柄的锚点"},
+          {"scope": "log", "text": "最终事件：你没有救下所有人，而是让死亡服从秩序。死亡路线倾向大幅上升。"}
+        ]
+      },
+      {
+        "id": "resolve_hidden_escape",
+        "name": "隐秘撤离",
+        "requirements": [
+          {"key": "exposure", "op": "<=", "value": 1, "reason": "暴露不能高于 1"},
+          {"key": "usable_clues", "op": ">=", "value": 1, "reason": "需要至少 1 个线索"}
+        ],
+        "preview": [
+          {"key": "exposure", "label": "暴露", "op": "<=", "value": 1},
+          {"key": "usable_clues", "label": "线索", "value": 1}
+        ],
+        "effects": [
+          {"scope": "tile_state", "state": "plague"},
+          {"scope": "tile_state", "state": "concealed_tracks"},
+          {"scope": "inventory", "item": "suspicious_clue", "delta": 1},
+          {"scope": "global_resource", "key": "materials", "delta": 1},
+          {"scope": "secrecy_pressure", "delta": -2},
+          {"scope": "experience", "delta": 1},
+          {"scope": "route_affinity", "route": "secret", "delta": 2},
+          {"scope": "event_summary", "text": "你带走病源线索，病村仍陷入瘟疫"},
+          {"scope": "log", "text": "最终事件：你隐秘撤离，保住自身与线索，但病村没有被拯救。"}
+        ]
+      },
+      {
+        "id": "resolve_plague_failure",
+        "name": "放任失控",
+        "preview": [],
+        "effects": [
+          {"scope": "tile_state", "state": "plague"},
+          {"scope": "tile_state", "state": "panic"},
+          {"scope": "tile_state", "state": "enemy_attention"},
+          {"scope": "tile_population", "delta": -1},
+          {"scope": "player_life", "delta": -2},
+          {"scope": "secrecy_pressure", "delta": 2},
+          {"scope": "sanity_status", "value": "动摇"},
+          {"scope": "event_summary", "text": "疫病失控，敌对势力注意到你的神迹"},
+          {"scope": "log", "text": "最终事件：疫病失控。你受伤并被更多敌对视线锁定。"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "old_well_source_spread",
+    "name": "旧井病源扩散",
+    "open_effects": [
+      {"scope": "tile_state", "state": "plague"},
+      {"scope": "tile_state", "state": "polluted"}
+    ],
+    "actions": [
+      {
+        "id": "resolve_seal_old_well",
+        "name": "封住旧井",
+        "requirements": [
+          {"key": "source_clues", "op": ">=", "value": 2, "reason": "病源线索需要 2"},
+          {"key": "cure_progress", "op": ">=", "value": 1, "reason": "治疗准备需要 1"}
+        ],
+        "preview": [
+          {"key": "source_clues", "label": "线索", "value": 2},
+          {"key": "cure_progress", "label": "治疗", "value": 1}
+        ],
+        "effects": [
+          {"scope": "tile_state", "state": "plague", "op": "remove"},
+          {"scope": "tile_state", "state": "polluted", "op": "remove"},
+          {"scope": "tile_state", "state": "concealed_tracks"},
+          {"scope": "global_resource", "key": "faith", "delta": 1},
+          {"scope": "experience", "delta": 2},
+          {"scope": "route_affinity", "route": "life", "delta": 1},
+          {"scope": "route_affinity", "route": "secret", "delta": 1},
+          {"scope": "event_summary", "text": "旧井被封住，病源暂时无法扩散"},
+          {"scope": "log", "text": "最终事件：你封住旧井，把病源压回黑暗深处。"}
+        ]
+      },
+      {
+        "id": "resolve_claim_source_name",
+        "name": "夺取真名",
+        "requirements": [
+          {"key": "source_clues", "op": ">=", "value": 2, "reason": "病源线索需要 2"},
+          {"key": "usable_clues", "op": ">=", "value": 2, "reason": "可整理线索需要 2"}
+        ],
+        "preview": [
+          {"key": "source_clues", "label": "病源", "value": 2},
+          {"key": "usable_clues", "label": "总线索", "value": 2}
+        ],
+        "effects": [
+          {"scope": "inventory", "item": "suspicious_clue", "delta": 2},
+          {"scope": "global_resource", "key": "materials", "delta": 1},
+          {"scope": "secrecy_pressure", "delta": 1},
+          {"scope": "experience", "delta": 2},
+          {"scope": "route_affinity", "route": "secret", "delta": 3},
+          {"scope": "event_summary", "text": "你夺走病源真名，旧井仍然危险"},
+          {"scope": "log", "text": "最终事件：你没有彻底封井，而是夺走了病源真名。隐秘路线大幅推进。"}
+        ]
+      },
+      {
+        "id": "resolve_well_death_sacrifice",
+        "name": "井底献祭",
+        "requirements": [
+          {"key": "death_route", "op": ">=", "value": 2, "reason": "死亡倾向需要 2"},
+          {"key": "materials", "op": ">=", "value": 1, "reason": "材料需要 1"}
+        ],
+        "preview": [
+          {"key": "death_route", "label": "死亡", "value": 2},
+          {"key": "materials", "label": "材料", "value": 1}
+        ],
+        "effects": [
+          {"scope": "tile_state", "state": "plague", "op": "remove"},
+          {"scope": "tile_state", "state": "polluted"},
+          {"scope": "global_resource", "key": "materials", "delta": -1},
+          {"scope": "tile_population", "delta": -1},
+          {"scope": "experience", "delta": 2},
+          {"scope": "route_affinity", "route": "death", "delta": 3},
+          {"scope": "sanity_status", "value": "洞见"},
+          {"scope": "event_summary", "text": "旧井成为死亡权柄的祭口"},
+          {"scope": "log", "text": "最终事件：你用祭品喂饱旧井，让病源转向死亡权柄。"}
+        ]
+      },
+      {
+        "id": "resolve_old_well_failure",
+        "name": "井疫外溢",
+        "preview": [],
+        "effects": [
+          {"scope": "tile_state", "state": "plague"},
+          {"scope": "tile_state", "state": "polluted"},
+          {"scope": "tile_state", "state": "enemy_attention"},
+          {"scope": "player_life", "delta": -1},
+          {"scope": "secrecy_pressure", "delta": 2},
+          {"scope": "event_summary", "text": "旧井病源外溢，周围地块陷入污染"},
+          {"scope": "log", "text": "最终事件：旧井里的病源外溢，敌对势力注意到了这处裂口。"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "shrine_anchor_loss",
+    "name": "神庙锚点失控",
+    "open_effects": [
+      {"scope": "tile_state", "state": "anchor"},
+      {"scope": "tile_state", "state": "enemy_attention"}
+    ],
+    "actions": [
+      {
+        "id": "resolve_stabilize_anchor",
+        "name": "稳固锚点",
+        "requirements": [
+          {"key": "anchor_progress", "op": ">=", "value": 2, "reason": "锚点进度需要 2"},
+          {"key": "faith", "op": ">=", "value": 4, "reason": "信仰需要 4"}
+        ],
+        "preview": [
+          {"key": "anchor_progress", "label": "锚点", "value": 2},
+          {"key": "faith", "label": "信仰", "value": 4}
+        ],
+        "effects": [
+          {"scope": "tile_state", "state": "anchor"},
+          {"scope": "tile_claim"},
+          {"scope": "tile_building", "building": "secret_shrine", "if_empty": true},
+          {"scope": "global_resource", "key": "faith", "delta": 2},
+          {"scope": "experience", "delta": 2},
+          {"scope": "route_affinity", "route": "faith", "delta": 3},
+          {"scope": "event_summary", "text": "废弃神庙成为稳定锚点"},
+          {"scope": "log", "text": "最终事件：你稳住了神庙锚点，让旧信仰归入自己的名字。"}
+        ]
+      },
+      {
+        "id": "resolve_awaken_shrine",
+        "name": "唤醒神庙",
+        "requirements": [
+          {"key": "materials", "op": ">=", "value": 2, "reason": "材料需要 2"},
+          {"key": "public_trust", "op": ">=", "value": 1, "reason": "见证信任需要 1"}
+        ],
+        "preview": [
+          {"key": "materials", "label": "材料", "value": 2},
+          {"key": "public_trust", "label": "信任", "value": 1}
+        ],
+        "effects": [
+          {"scope": "global_resource", "key": "materials", "delta": -2},
+          {"scope": "global_resource", "key": "followers", "delta": 1},
+          {"scope": "global_resource", "key": "faith", "delta": 3},
+          {"scope": "secrecy_pressure", "delta": 1},
+          {"scope": "tile_state", "state": "anchor"},
+          {"scope": "tile_claim"},
+          {"scope": "experience", "delta": 2},
+          {"scope": "route_affinity", "route": "faith", "delta": 2},
+          {"scope": "event_summary", "text": "神庙被唤醒，信徒看见了你的神名"},
+          {"scope": "log", "text": "最终事件：你公开唤醒神庙，获得信仰，也留下被看见的痕迹。"}
+        ]
+      },
+      {
+        "id": "resolve_conceal_shrine",
+        "name": "遮蔽神庙",
+        "requirements": [
+          {"key": "usable_clues", "op": ">=", "value": 1, "reason": "线索需要 1"},
+          {"key": "exposure", "op": "<=", "value": 2, "reason": "暴露不能高于 2"}
+        ],
+        "preview": [
+          {"key": "usable_clues", "label": "线索", "value": 1},
+          {"key": "exposure", "label": "暴露", "op": "<=", "value": 2}
+        ],
+        "effects": [
+          {"scope": "tile_state", "state": "concealed_tracks"},
+          {"scope": "secrecy_pressure", "delta": -2},
+          {"scope": "experience", "delta": 1},
+          {"scope": "route_affinity", "route": "secret", "delta": 2},
+          {"scope": "event_summary", "text": "神庙被遮蔽，锚点暂时无人知晓"},
+          {"scope": "log", "text": "最终事件：你没有稳固锚点，而是把神庙藏进阴影里。"}
+        ]
+      },
+      {
+        "id": "resolve_shrine_failure",
+        "name": "锚点失控",
+        "preview": [],
+        "effects": [
+          {"scope": "tile_state", "state": "polluted"},
+          {"scope": "tile_state", "state": "enemy_attention"},
+          {"scope": "secrecy_pressure", "delta": 2},
+          {"scope": "event_summary", "text": "神庙锚点失控，旧信仰污染了此地"},
+          {"scope": "log", "text": "最终事件：锚点没有被稳住，旧神残响污染了神庙。"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "graveyard_dead_tide",
+    "name": "墓地死疫聚拢",
+    "open_effects": [
+      {"scope": "tile_state", "state": "polluted"},
+      {"scope": "tile_state", "state": "panic"}
+    ],
+    "actions": [
+      {
+        "id": "resolve_command_grave_dead",
+        "name": "号令死者",
+        "requirements": [
+          {"key": "death_route", "op": ">=", "value": 3, "reason": "死亡倾向需要 3"},
+          {"key": "materials", "op": ">=", "value": 1, "reason": "材料需要 1"}
+        ],
+        "preview": [
+          {"key": "death_route", "label": "死亡", "value": 3},
+          {"key": "materials", "label": "材料", "value": 1}
+        ],
+        "effects": [
+          {"scope": "global_resource", "key": "materials", "delta": -1},
+          {"scope": "global_resource", "key": "faith", "delta": 2},
+          {"scope": "tile_state", "state": "anchor"},
+          {"scope": "tile_state", "state": "polluted"},
+          {"scope": "experience", "delta": 3},
+          {"scope": "route_affinity", "route": "death", "delta": 3},
+          {"scope": "event_summary", "text": "墓地死者暂时听从你的命令"},
+          {"scope": "log", "text": "最终事件：你让墓地死者排成静默的队列，死亡路线大幅推进。"}
+        ]
+      },
+      {
+        "id": "resolve_harvest_grave_relics",
+        "name": "收殓遗物",
+        "requirements": [
+          {"key": "source_clues", "op": ">=", "value": 1, "reason": "线索需要 1"},
+          {"key": "usable_clues", "op": ">=", "value": 1, "reason": "可整理线索需要 1"}
+        ],
+        "preview": [
+          {"key": "source_clues", "label": "线索", "value": 1},
+          {"key": "usable_clues", "label": "总线索", "value": 1}
+        ],
+        "effects": [
+          {"scope": "inventory", "item": "relic_fragment", "delta": 1},
+          {"scope": "global_resource", "key": "materials", "delta": 1},
+          {"scope": "experience", "delta": 1},
+          {"scope": "route_affinity", "route": "secret", "delta": 1},
+          {"scope": "event_summary", "text": "你从墓地带走遗物与死疫线索"},
+          {"scope": "log", "text": "最终事件：你没有驱散死疫，而是收殓遗物，带走墓地秘密。"}
+        ]
+      },
+      {
+        "id": "resolve_sanctify_graves",
+        "name": "安抚亡者",
+        "requirements": [
+          {"key": "faith", "op": ">=", "value": 3, "reason": "信仰需要 3"},
+          {"key": "cure_progress", "op": ">=", "value": 1, "reason": "治疗准备需要 1"}
+        ],
+        "preview": [
+          {"key": "faith", "label": "信仰", "value": 3},
+          {"key": "cure_progress", "label": "治疗", "value": 1}
+        ],
+        "effects": [
+          {"scope": "tile_state", "state": "polluted", "op": "remove"},
+          {"scope": "tile_state", "state": "blessed"},
+          {"scope": "global_resource", "key": "faith", "delta": 1},
+          {"scope": "experience", "delta": 2},
+          {"scope": "route_affinity", "route": "life", "delta": 1},
+          {"scope": "event_summary", "text": "墓地被安抚，死疫暂时沉睡"},
+          {"scope": "log", "text": "最终事件：你安抚亡者，墓地短暂恢复安宁。"}
+        ]
+      },
+      {
+        "id": "resolve_graveyard_failure",
+        "name": "死疫漫出",
+        "preview": [],
+        "effects": [
+          {"scope": "tile_state", "state": "plague"},
+          {"scope": "tile_state", "state": "polluted"},
+          {"scope": "tile_state", "state": "panic"},
+          {"scope": "player_life", "delta": -1},
+          {"scope": "secrecy_pressure", "delta": 1},
+          {"scope": "event_summary", "text": "墓地死疫漫出，附近生者开始恐慌"},
+          {"scope": "log", "text": "最终事件：墓地死疫漫出，生者和死者都记住了你的迟疑。"}
+        ]
+      }
+    ]
+  }
+]

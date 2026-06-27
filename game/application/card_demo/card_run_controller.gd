@@ -13,8 +13,10 @@ var card_defs: Dictionary = {}
 var encounter_defs: Dictionary = {}
 
 var current_encounter: Dictionary = {}
+var current_event_pool_id: String = ""
 var resources: Dictionary = {}
 var progress: Dictionary = {}
+var persistent_deck: Array = []
 var deck: Array = []
 var hand: Array = []
 var discard: Array = []
@@ -30,14 +32,20 @@ var is_finished: bool = false
 var final_result: Dictionary = {}
 
 
-func start_demo(encounter_id: String = "sick_village") -> void:
+func start_demo(encounter_id: String = "sick_village", turn_events_override: Array = [], event_pool_id: String = "") -> void:
 	rng.randomize()
 	_load_data()
 	assert(encounter_defs.has(encounter_id), "Encounter not found: " + encounter_id)
 	current_encounter = encounter_defs[encounter_id].duplicate(true)
+	current_event_pool_id = event_pool_id
+	if not turn_events_override.is_empty():
+		current_encounter["turn_events"] = turn_events_override.duplicate(true)
+		current_encounter["event_pool_id"] = event_pool_id
 	resources = current_encounter.get("initial_resources", {}).duplicate(true)
 	progress = current_encounter.get("initial_progress", {}).duplicate(true)
-	deck = current_encounter.get("starting_deck", []).duplicate(true)
+	if persistent_deck.is_empty():
+		persistent_deck = current_encounter.get("starting_deck", []).duplicate(true)
+	deck = persistent_deck.duplicate(true)
 	hand.clear()
 	discard.clear()
 	pending_event.clear()
@@ -145,6 +153,7 @@ func get_snapshot() -> Dictionary:
 		hand_cards.append(card)
 	return {
 		"encounter": current_encounter.duplicate(true),
+		"event_pool_id": current_event_pool_id,
 		"turn": turn,
 		"countdown": countdown,
 		"resources": resources.duplicate(true),
@@ -180,6 +189,39 @@ func sync_resources(values: Dictionary) -> void:
 		changed = true
 	if changed:
 		_emit_state()
+
+
+func apply_external_deltas(resource_deltas: Dictionary, progress_deltas: Dictionary) -> void:
+	var changed := false
+	for key in resource_deltas.keys():
+		var resource_key := str(key)
+		var before_resource := int(resources.get(resource_key, 0))
+		_change_resource(resource_key, int(resource_deltas.get(key, 0)))
+		changed = changed or int(resources.get(resource_key, 0)) != before_resource
+	for key in progress_deltas.keys():
+		var progress_key := str(key)
+		var before_progress := int(progress.get(progress_key, 0))
+		_change_progress(progress_key, int(progress_deltas.get(key, 0)))
+		changed = changed or int(progress.get(progress_key, 0)) != before_progress
+	if changed:
+		_emit_state()
+
+
+func apply_external_effects(effects: Array, source: Dictionary = {}) -> void:
+	if effects.is_empty():
+		return
+	_apply_effects(effects, source)
+	_emit_state()
+
+
+func grant_card_to_discard(card_id: String) -> bool:
+	if card_id.is_empty() or not card_defs.has(card_id):
+		return false
+	persistent_deck.append(card_id)
+	discard.append(card_id)
+	_log("获得卡牌：" + str(get_card_def(card_id).get("name", card_id)))
+	_emit_state()
+	return true
 
 
 func has_pending_event() -> bool:

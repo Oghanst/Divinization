@@ -18,8 +18,8 @@ const BOTTOM_PANEL_HEIGHT := 430.0
 const ACTION_DOCK_WIDTH := 430.0
 const CARD_LOG_WIDTH := 520.0
 const INVENTORY_SLOT_COUNT := 12
-const INVENTORY_POPUP_SIZE := Vector2(560, 360)
-const INVENTORY_SLOT_SIZE := Vector2(116, 86)
+const INVENTORY_POPUP_SIZE := Vector2(760, 500)
+const INVENTORY_SLOT_SIZE := Vector2(170, 128)
 const TYPE_COLORS := {
 	"行动": Color(0.55, 0.43, 0.25, 1.0),
 	"神迹": Color(0.72, 0.58, 0.26, 1.0),
@@ -320,22 +320,57 @@ func _update_map_actions() -> void:
 		if not pending_event.get("exploited_effects", []).is_empty():
 			options.append("利用")
 		stage_text += "\n预兆：%s（%s）" % [str(pending_event.get("name", "")), " / ".join(options)]
-	map_status_label.text = "地图 AP %s/%s  生命 %s/%s\n信仰 %s  材料 %s  信徒 %s\n位置 %s\n%s" % [
+		for preview in map_snapshot.get("pending_event_response_preview", []):
+			if typeof(preview) != TYPE_DICTIONARY:
+				continue
+			stage_text += "\n%s AP%s：%s" % [
+				str(preview.get("name", "")),
+				str(preview.get("cost", 0)),
+				str(preview.get("summary", "")),
+			]
+			var bonus_status := str(preview.get("route_bonus_status", ""))
+			if not bonus_status.is_empty():
+				stage_text += "\n路线：%s" % bonus_status
+	if bool(map_snapshot.get("stage_reward_pending", false)):
+		var reward_lines: Array[String] = ["阶段奖励：选择一种成长"]
+		for reward in map_snapshot.get("stage_reward_options", []):
+			if typeof(reward) != TYPE_DICTIONARY:
+				continue
+			reward_lines.append("%s：%s" % [
+				str(reward.get("name", "")),
+				str(reward.get("effect_summary", "")),
+			])
+		stage_text = "\n".join(reward_lines)
+	if bool(map_snapshot.get("stage_node_pending", false)):
+		var node_lines: Array[String] = ["选择下个节点"]
+		for node in map_snapshot.get("stage_node_options", []):
+			if typeof(node) != TYPE_DICTIONARY:
+				continue
+			node_lines.append("%s（%s 回合）：%s" % [
+				str(node.get("name", "")),
+				str(node.get("turn_limit", 0)),
+				str(node.get("effect_summary", "")),
+			])
+		stage_text = "\n".join(node_lines)
+	map_status_label.text = "地图 AP %s/%s  生命 %s/%s\n节点 %s  位置 %s\n信仰 %s  材料 %s  信徒 %s\n%s" % [
 		str(map_snapshot.get("action_points", 0)),
 		str(map_snapshot.get("max_action_points", 0)),
 		str(map_snapshot.get("life", 0)),
 		str(map_snapshot.get("max_life", 0)),
+		str(map_snapshot.get("stage_node_name", "病村")),
+		str(map_snapshot.get("player_coord", Vector2i.ZERO)),
 		str(resources.get("faith", 0)),
 		str(resources.get("materials", 0)),
 		str(resources.get("followers", 0)),
-		str(map_snapshot.get("player_coord", Vector2i.ZERO)),
 		stage_text,
 	]
 	_refresh_inventory_popup()
 	for child in map_actions_grid.get_children():
 		map_actions_grid.remove_child(child)
 		child.queue_free()
-	for action in map_snapshot.get("actions", []):
+	var actions: Array = map_snapshot.get("actions", [])
+	map_actions_grid.columns = 2 if _actions_are_stage_choices(actions) else 4
+	for action in actions:
 		if typeof(action) != TYPE_DICTIONARY:
 			continue
 		var action_id := str(action.get("id", ""))
@@ -437,13 +472,13 @@ func _make_inventory_slot(entry: Dictionary) -> PanelContainer:
 
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", _scaled_int(4))
+	box.add_theme_constant_override("separation", _scaled_int(5))
 	slot.add_child(box)
 
 	var name_label := _make_label(15)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	name_label.custom_minimum_size = Vector2(0, _scaled(24))
 	name_label.text = "空"
 	if not entry.is_empty():
 		name_label.text = str(entry.get("name", entry.get("id", "")))
@@ -457,18 +492,60 @@ func _make_inventory_slot(entry: Dictionary) -> PanelContainer:
 	if not entry.is_empty():
 		quantity_label.text = "x%s" % str(entry.get("quantity", 0))
 	box.add_child(quantity_label)
+	if entry.is_empty():
+		return slot
+
+	var summary_label := _make_label(13)
+	summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	summary_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	summary_label.custom_minimum_size = Vector2(0, _scaled(34))
+	summary_label.add_theme_color_override("font_color", Color(0.78, 0.72, 0.62, 1.0))
+	summary_label.text = str(entry.get("use_effect_summary", entry.get("description", "")))
+	box.add_child(summary_label)
+
+	var use_button := Button.new()
+	use_button.custom_minimum_size = Vector2(0, _scaled(34))
+	use_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	use_button.add_theme_font_size_override("font_size", _scaled_int(14))
+	use_button.disabled = not bool(entry.get("use_enabled", false))
+	if bool(entry.get("use_enabled", false)):
+		use_button.text = str(entry.get("use_label", "使用"))
+	else:
+		var reason := str(entry.get("use_reason", "不可用"))
+		use_button.text = reason if reason.length() <= 8 else reason.substr(0, 8)
+	var action_id := str(entry.get("use_action_id", ""))
+	use_button.pressed.connect(func(): map_action_requested.emit(action_id))
+	box.add_child(use_button)
 	return slot
 
 
 func _make_map_action_button(action: Dictionary, action_id: String) -> Button:
 	var button := Button.new()
-	button.text = str(action.get("label", action_id))
-	button.custom_minimum_size = Vector2(_scaled(96), _scaled(40))
-	button.add_theme_font_size_override("font_size", _scaled_int(16))
+	if action_id.begins_with("claim_reward:") or action_id.begins_with("choose_node:"):
+		var summary := str(action.get("summary", ""))
+		button.text = "%s\n%s" % [str(action.get("label", action_id)), summary]
+		button.custom_minimum_size = Vector2(_scaled(196), _scaled(70))
+		button.add_theme_font_size_override("font_size", _scaled_int(13))
+	else:
+		button.text = str(action.get("label", action_id))
+		button.custom_minimum_size = Vector2(_scaled(96), _scaled(40))
+		button.add_theme_font_size_override("font_size", _scaled_int(16))
 	button.disabled = not bool(action.get("enabled", false))
 	button.tooltip_text = str(action.get("reason", ""))
 	button.pressed.connect(func(): map_action_requested.emit(action_id))
 	return button
+
+
+func _actions_are_stage_choices(actions: Array) -> bool:
+	if actions.is_empty():
+		return false
+	for action in actions:
+		if typeof(action) != TYPE_DICTIONARY:
+			continue
+		var action_id := str(action.get("id", ""))
+		if action_id.begins_with("claim_reward:") or action_id.begins_with("choose_node:"):
+			return true
+	return false
 
 
 func _update_map_log() -> void:

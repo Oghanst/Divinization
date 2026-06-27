@@ -1,0 +1,302 @@
+[
+  {
+    "id": "plague_outbreak",
+    "name": "病村预兆",
+    "events": [
+      {
+        "id": "patient_worsens",
+        "name": "病人恶化",
+        "text": "又有病人开始吐出黑色血块。",
+        "effects": [
+          {"kind": "progress", "key": "infection", "value": 1},
+          {"kind": "map_tile_state", "state": "plague"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "cure_progress", "value": 1},
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "log", "text": "你提前照看恶化的病人，记下了新的病源线索。"}
+        ],
+        "route_bonuses": [
+          {
+            "mode": "handled",
+            "route": "life",
+            "threshold": 2,
+            "name": "生命共鸣",
+            "effects": [
+              {"kind": "progress", "key": "cure_progress", "value": 1},
+              {"kind": "log", "text": "生命倾向让你的照护更稳定，治疗准备额外推进。"}
+            ]
+          }
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "death_route", "value": 1},
+          {"kind": "resource", "key": "materials", "value": 1},
+          {"kind": "map_tile_state", "state": "plague"},
+          {"kind": "log", "text": "你把病人的痛苦导入死物，死亡权柄有了回应。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "faith", "value": 2},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "progress", "key": "public_trust", "value": 1},
+          {"kind": "log", "text": "你借一次公开缓解病痛换来信任，但异常传闻也扩散开来。"}
+        ]
+      },
+      {
+        "id": "villagers_panic",
+        "name": "村民恐慌",
+        "text": "恐慌在村民之间扩散，所有人都在寻找替罪羊。",
+        "effects": [
+          {"kind": "progress", "key": "suspicion", "value": 1},
+          {"kind": "resource", "key": "faith", "value": -1},
+          {"kind": "map_tile_state", "state": "panic"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "public_trust", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 1},
+          {"kind": "log", "text": "你安抚了恐慌的村民，他们愿意听从你的安排。"}
+        ],
+        "converted_effects": [
+          {"kind": "resource", "key": "faith", "value": 2},
+          {"kind": "progress", "key": "anchor_progress", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "你把恐慌转成集体祈祷，村庄短暂成为神名回声。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "followers", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 1},
+          {"kind": "progress", "key": "suspicion", "value": 1},
+          {"kind": "map_tile_state", "state": "panic"},
+          {"kind": "log", "text": "你借恐慌传播神名，得到追随者，也留下更深不安。"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "old_well_source_spread",
+    "name": "旧井预兆",
+    "events": [
+      {
+        "id": "old_well_black_water",
+        "name": "井水变黑",
+        "text": "旧井水面浮起黑色油膜，倒影里有人说出你的假名。",
+        "effects": [
+          {"kind": "progress", "key": "infection", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "map_tile_state", "state": "polluted"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "progress", "key": "cure_progress", "value": 1},
+          {"kind": "log", "text": "你过滤了井水样本，找到了病源扩散的节律。"}
+        ],
+        "route_bonuses": [
+          {
+            "mode": "handled",
+            "route": "secret",
+            "threshold": 1,
+            "name": "隐秘共鸣",
+            "effects": [
+              {"kind": "progress", "key": "source_clues", "value": 1},
+              {"kind": "progress", "key": "secret_route", "value": 1},
+              {"kind": "log", "text": "隐秘倾向让你从黑水倒影中额外截下一段真线索。"}
+            ]
+          }
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "secret_route", "value": 1},
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": -1},
+          {"kind": "log", "text": "你把井中倒影改写成误导，真线索只留给自己。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "materials", "value": 2},
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "sanity", "value": -1},
+          {"kind": "log", "text": "你从黑水里捞出病源沉渣，理智被井底低语刮走一点。"}
+        ]
+      },
+      {
+        "id": "old_well_name_echo",
+        "name": "真名回声",
+        "text": "井壁传回不完整的真名，每听一次都更难忘记。",
+        "effects": [
+          {"kind": "resource", "key": "sanity", "value": -1},
+          {"kind": "map_tile_state", "state": "enemy_attention"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": -1},
+          {"kind": "log", "text": "你截断了真名回声，只留下可用的病源片段。"}
+        ],
+        "route_bonuses": [
+          {
+            "mode": "handled",
+            "route": "secret",
+            "threshold": 1,
+            "name": "隐秘共鸣",
+            "effects": [
+              {"kind": "progress", "key": "source_clues", "value": 1},
+              {"kind": "progress", "key": "secret_route", "value": 1},
+              {"kind": "log", "text": "你熟悉遮蔽真名的方式，额外保留了一段回声。"}
+            ]
+          },
+          {
+            "mode": "converted",
+            "route": "secret",
+            "threshold": 2,
+            "name": "隐秘共鸣",
+            "effects": [
+              {"kind": "resource", "key": "exposure", "value": -1},
+              {"kind": "log", "text": "更深的隐秘倾向让转化后的回声难以反向追踪。"}
+            ]
+          }
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "secret_route", "value": 2},
+          {"kind": "resource", "key": "sanity", "value": -1},
+          {"kind": "log", "text": "你把真名回声藏进自己的隐秘道路，代价是更靠近深处。"}
+        ],
+        "exploited_effects": [
+          {"kind": "progress", "key": "source_clues", "value": 2},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "你强行听完回声，获得完整线索，也让井底知道你在听。"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "shrine_anchor_loss",
+    "name": "神庙预兆",
+    "events": [
+      {
+        "id": "shrine_lamp_flickers",
+        "name": "旧灯复燃",
+        "text": "神庙旧灯忽然亮起，照出一些不属于你的祈祷姿势。",
+        "effects": [
+          {"kind": "progress", "key": "suspicion", "value": 1},
+          {"kind": "map_tile_state", "state": "enemy_attention"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "anchor_progress", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 1},
+          {"kind": "log", "text": "你校正了旧灯的朝向，锚点更稳定了。"}
+        ],
+        "route_bonuses": [
+          {
+            "mode": "handled",
+            "route": "faith",
+            "threshold": 2,
+            "name": "信仰共鸣",
+            "effects": [
+              {"kind": "progress", "key": "anchor_progress", "value": 1},
+              {"kind": "log", "text": "信仰倾向让旧灯更快承认你的名字，锚点额外稳定。"}
+            ]
+          }
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "anchor_progress", "value": 2},
+          {"kind": "resource", "key": "materials", "value": -1},
+          {"kind": "log", "text": "你用材料重刻灯座，旧神残光被转成自己的锚。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "faith", "value": 3},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "你让旧灯公开显光，信仰增长，目击者也变多了。"}
+        ]
+      },
+      {
+        "id": "pilgrim_arrives",
+        "name": "迷路朝圣者",
+        "text": "一名朝圣者误入神庙，跪向了错误的神像。",
+        "effects": [
+          {"kind": "resource", "key": "faith", "value": -1},
+          {"kind": "progress", "key": "suspicion", "value": 1}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "public_trust", "value": 1},
+          {"kind": "resource", "key": "followers", "value": 1},
+          {"kind": "log", "text": "你引导朝圣者离开旧神像，他成了谨慎的见证人。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "anchor_progress", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 1},
+          {"kind": "log", "text": "你把朝圣者的错误祈祷接到自己的神名上。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "followers", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 2},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "你让朝圣者公开讲述神迹，追随者增加，神庙也更显眼。"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "graveyard_dead_tide",
+    "name": "墓地预兆",
+    "events": [
+      {
+        "id": "grave_bell_rings",
+        "name": "无钟自鸣",
+        "text": "墓地里没有钟，夜里却响了三下。",
+        "effects": [
+          {"kind": "progress", "key": "infection", "value": 1},
+          {"kind": "map_tile_state", "state": "panic"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "materials", "value": 1},
+          {"kind": "log", "text": "你跟着钟声找到新坟的异常残留。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "death_route", "value": 2},
+          {"kind": "resource", "key": "sanity", "value": -1},
+          {"kind": "log", "text": "你让钟声成为死者队列的号令，死亡回应了。"}
+        ],
+        "route_bonuses": [
+          {
+            "mode": "converted",
+            "route": "death",
+            "threshold": 2,
+            "name": "死亡共鸣",
+            "effects": [
+              {"kind": "resource", "key": "materials", "value": 1},
+              {"kind": "log", "text": "死亡倾向让墓铃吐出一枚冷硬遗物。"}
+            ]
+          }
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "materials", "value": 2},
+          {"kind": "progress", "key": "death_route", "value": 1},
+          {"kind": "map_tile_state", "state": "polluted"},
+          {"kind": "log", "text": "你从墓铃指向的坟里取走遗物，污染也被翻了出来。"}
+        ]
+      },
+      {
+        "id": "unburied_hand",
+        "name": "未葬之手",
+        "text": "一只手从湿土里伸出，指向村庄方向。",
+        "effects": [
+          {"kind": "map_tile_state", "state": "plague"},
+          {"kind": "resource", "key": "exposure", "value": 1}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "cure_progress", "value": 1},
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "log", "text": "你重新埋葬尸骨，发现死疫和病村仍有联系。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "death_route", "value": 1},
+          {"kind": "resource", "key": "followers", "value": 1},
+          {"kind": "log", "text": "你让未葬者成为无声仆从，死亡路线更深。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "materials", "value": 1},
+          {"kind": "progress", "key": "death_route", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "你取走尸骨上的冷硬材料，也让墓地动静传了出去。"}
+        ]
+      }
+    ]
+  }
+]
