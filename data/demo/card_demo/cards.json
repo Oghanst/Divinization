@@ -744,5 +744,195 @@
       }
     ],
     "art": "res://assets/generated/card_demo/art/fever_dream.png"
+  },
+  {
+    "id": "vine_thorn",
+    "name": "藤刺",
+    "type": "攻击",
+    "tags": ["生命"],
+    "cost": 1,
+    "text": "造成 4 点伤害。病灶护层被看穿后更致命。",
+    "effects": [
+      {"kind": "damage_boss", "value": 4},
+      {"kind": "log", "text": "藤蔓从伤口边缘刺入，迫使疫病显形。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/death_transfer.png"
+  },
+  {
+    "id": "warding_leaf",
+    "name": "护身叶",
+    "type": "防御",
+    "tags": ["生命"],
+    "cost": 1,
+    "text": "获得 5 点护盾，并保护 1 名信徒。",
+    "effects": [
+      {"kind": "block", "value": 5},
+      {"kind": "protect_follower", "value": 1},
+      {"kind": "log", "text": "薄叶贴住皮肤，替脆弱者挡下一次病痛。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/calm_villagers.png"
+  },
+  {
+    "id": "glimmer_heal",
+    "name": "微光治愈",
+    "type": "技能",
+    "tags": ["生命"],
+    "cost": 1,
+    "text": "准备阶段使病势 -1；战斗阶段恢复 2 生命。若高热在手，移除它。",
+    "effects": [
+      {"kind": "heal_or_reduce_plague", "value": 2},
+      {"kind": "remove_status_from_hand", "card_id": "high_fever"},
+      {"kind": "progress", "key": "cure_progress", "value": 1},
+      {"kind": "log", "text": "微光压下高热，病人的呼吸短暂平稳。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/weak_heal.png"
+  },
+  {
+    "id": "palpation",
+    "name": "触诊",
+    "type": "技能",
+    "tags": ["生命", "调查"],
+    "cost": 1,
+    "text": "准备阶段病源线索 +1；战斗阶段移除 1 层病灶护层。",
+    "effects": [
+      {"kind": "progress", "key": "source_clues", "value": 1},
+      {"kind": "remove_lesion", "value": 1},
+      {"kind": "log", "text": "你沿着脉搏摸到病灶真正的走向。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/observe_symptoms.png"
+  },
+  {
+    "id": "settle_wounded",
+    "name": "安置伤民",
+    "type": "技能",
+    "tags": ["生命", "信徒"],
+    "cost": 1,
+    "text": "获得 1 信徒，并保护 1 名信徒免受本回合破坏。",
+    "effects": [
+      {"kind": "resource", "key": "followers", "value": 1},
+      {"kind": "protect_follower", "value": 1},
+      {"kind": "log", "text": "伤民被转移到安全屋，他们愿意记住你的名字。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/private_preach.png"
+  },
+  {
+    "id": "sprout_rite",
+    "name": "萌芽祭",
+    "type": "仪式",
+    "tags": ["生命", "锚点"],
+    "cost": 1,
+    "text": "消耗 1 材料，准备阶段初生锚点 +1；战斗中满足条件则净化溃疡使徒。",
+    "requirements": [
+      {"scope": "resource", "key": "materials", "op": ">=", "value": 1}
+    ],
+    "effects": [
+      {"kind": "resource", "key": "materials", "value": -1},
+      {"kind": "progress", "key": "anchor_progress", "value": 1},
+      {"kind": "purify_boss"},
+      {"kind": "log", "text": "旧血与新芽交叠，病村第一次把治愈当作神名。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/small_ritual.png"
+  },
+  {
+    "id": "flesh_compensation",
+    "name": "血肉代偿",
+    "type": "仪式",
+    "tags": ["生命", "代价"],
+    "cost": 0,
+    "text": "失去 2 生命，获得 1 行动点。下一张生命牌效果 +1。",
+    "requirements": [
+      {"scope": "resource", "key": "life", "op": ">=", "value": 3}
+    ],
+    "effects": [
+      {"kind": "lose_life", "value": 2},
+      {"kind": "gain_action_points", "value": 1},
+      {"kind": "next_life_bonus", "value": 1},
+      {"kind": "log", "text": "你用自己的血肉替别人争来下一次呼吸。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/whisper_dream.png"
+  },
+  {
+    "id": "pus_blood",
+    "name": "脓血",
+    "type": "污染",
+    "cost": 1,
+    "text": "打出以移除。若留在手中，回合结束生命 -1。",
+    "exhaust": true,
+    "effects": [
+      {"kind": "log", "text": "你处理掉一团脓血。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/fever_dream.png"
+  },
+  {
+    "id": "high_fever",
+    "name": "高热",
+    "type": "污染",
+    "cost": 1,
+    "text": "在手中时，第一张技能牌费用 +1。打出或用微光治愈可移除。",
+    "exhaust": true,
+    "effects": [
+      {"kind": "log", "text": "你压下一阵高热。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/fever_dream.png"
+  },
+  {
+    "id": "sprout_blessing",
+    "name": "新芽祝福",
+    "type": "祝福",
+    "tags": ["生命"],
+    "cost": 0,
+    "text": "恢复 2 生命，并保护 1 名信徒。",
+    "exhaust": true,
+    "effects": [
+      {"kind": "heal", "value": 2},
+      {"kind": "protect_follower", "value": 1},
+      {"kind": "log", "text": "新芽祝福替一个脆弱生命撑住了今日。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/weak_heal.png"
+  },
+  {
+    "id": "revival_bulwark",
+    "name": "复苏护壁",
+    "type": "防御",
+    "tags": ["生命"],
+    "cost": 1,
+    "text": "获得 7 点护盾。",
+    "effects": [
+      {"kind": "block", "value": 7},
+      {"kind": "log", "text": "复苏护壁把病痛隔在门外。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/calm_villagers.png"
+  },
+  {
+    "id": "root_bind",
+    "name": "根须缠缚",
+    "type": "攻击",
+    "tags": ["生命", "控制"],
+    "cost": 1,
+    "text": "造成 3 点伤害，并获得 3 点护盾。",
+    "effects": [
+      {"kind": "damage_boss", "value": 3},
+      {"kind": "block", "value": 3},
+      {"kind": "log", "text": "根须勒住溃疡使徒的行动。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/death_transfer.png"
+  },
+  {
+    "id": "newborn_sigil",
+    "name": "新生祭印",
+    "type": "仪式",
+    "tags": ["生命", "锚点"],
+    "cost": 1,
+    "requirements": [
+      {"scope": "resource", "key": "faith", "op": ">=", "value": 1}
+    ],
+    "text": "消耗 1 信仰，初生锚点 +1，并保护 1 名信徒。",
+    "effects": [
+      {"kind": "resource", "key": "faith", "value": -1},
+      {"kind": "progress", "key": "anchor_progress", "value": 1},
+      {"kind": "protect_follower", "value": 1},
+      {"kind": "log", "text": "新生祭印让一块土地开始替生命作证。"}
+    ],
+    "art": "res://assets/generated/card_demo/art/small_ritual.png"
   }
 ]

@@ -25,8 +25,6 @@ SystemService="*res://game/core/service/system_service.gd"
 
 window/size/viewport_width=2560
 window/size/viewport_height=1440
-window/dpi/allow_hidpi=true
-window/stretch/mode="disabled"
 
 [file_customization]
 

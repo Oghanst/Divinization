@@ -6,8 +6,8 @@ var player_coord := Vector2i.ZERO
 var selected_coord := Vector2i.ZERO
 var max_action_points: int = 3
 var action_points: int = 3
-var life: int = 8
-var max_life: int = 10
+var life: int = 24
+var max_life: int = 24
 var experience: int = 0
 var level: int = 1
 var ascension_tier: int = 0
@@ -41,18 +41,18 @@ var route_bonus_threshold_mods := {
 	"secret": 0,
 }
 var global_resources := {
-	"faith": 4,
+	"faith": 0,
 	"materials": 1,
-	"followers": 3,
+	"followers": 0,
 	"cult_cells": 0,
 	"apostles": 0,
 }
 var event_key: String = "plague_outbreak"
-var event_countdown: int = 6
-var event_countdown_template: String = "瘟疫将在 {countdown} 回合后全面爆发"
-var event_crisis_summary: String = "最终事件：疫病爆发，选择处理方式"
-var event_crisis_log: String = "阶段事件：疫病全面爆发。前几回合积累的线索、信仰、材料和隐秘状态将决定你能选择哪种结局。"
-var event_summary: String = "瘟疫将在 6 回合后全面爆发"
+var event_countdown: int = 5
+var event_countdown_template: String = "溃疡使徒将在 {countdown} 回合后抵达"
+var event_crisis_summary: String = "关底战：溃疡使徒抵达"
+var event_crisis_log: String = "阶段事件：溃疡使徒抵达。病势、病源线索与初生锚点将决定关底战强度和胜利方式。"
+var event_summary: String = "溃疡使徒将在 5 回合后抵达"
 
 
 func reset_action_points() -> void:

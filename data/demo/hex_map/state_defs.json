@@ -45,6 +45,31 @@
     "description": "近期行动被遮蔽，追踪压力降低。"
   },
   {
+    "id": "settled_wounded",
+    "name": "伤民已安置",
+    "description": "伤民被转移到较安全的位置，短期内能抵消敌人的破坏。"
+  },
+  {
+    "id": "temporary_altar",
+    "name": "临时祭坛",
+    "description": "用残砖和材料搭出的临时祭坛，提供一次初生锚点。"
+  },
+  {
+    "id": "sprout_village",
+    "name": "新芽病村",
+    "description": "病村被重新解释为被庇护的村庄，可以成为生命路线的早期锚点。"
+  },
+  {
+    "id": "lingering_plague",
+    "name": "余疫病村",
+    "description": "村庄存活，但仍有余疫残留，后续可能生成疫病材料或二次危机。"
+  },
+  {
+    "id": "ulcerated_land",
+    "name": "溃烂地块",
+    "description": "溃疡使徒夺走了这里，污染成为新的地块解释。"
+  },
+  {
     "id": "encounter_active",
     "name": "遭遇已触发",
     "description": "这里已经进入占位遭遇流程。"

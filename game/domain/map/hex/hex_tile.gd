@@ -24,6 +24,9 @@ var explored: bool = false
 var dungeon_entrance_id: String = ""
 var dungeon_entrance_name: String = ""
 var entrance_revealed: bool = false
+var site_id: String = ""
+var site_name: String = ""
+var site_description: String = ""
 
 
 func _init(
@@ -103,6 +106,12 @@ func set_dungeon_entrance(entrance_id: String, entrance_name: String) -> void:
 	dungeon_entrance_name = entrance_name
 
 
+func set_site(new_site_id: String, new_site_name: String, new_site_description: String = "") -> void:
+	site_id = new_site_id
+	site_name = new_site_name
+	site_description = new_site_description
+
+
 func has_visible_entrance() -> bool:
 	return dungeon_entrance_id != "" and entrance_revealed
 
@@ -133,6 +142,9 @@ func get_info() -> Dictionary:
 		"dungeon_entrance_id": dungeon_entrance_id,
 		"dungeon_entrance_name": dungeon_entrance_name,
 		"entrance_revealed": entrance_revealed,
+		"site_id": site_id,
+		"site_name": site_name,
+		"site_description": site_description,
 		"yields": get_yields(),
 	}
 

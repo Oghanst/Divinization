@@ -4,6 +4,20 @@ const MapScene := preload("res://scenes/map/hex_civilization_map.tscn")
 
 
 func _ready() -> void:
+	var site_map := MapScene.instantiate()
+	add_child(site_map)
+	await get_tree().process_frame
+	_run_story_site_smoke(site_map)
+	site_map.queue_free()
+	await get_tree().process_frame
+
+	var purify_map := MapScene.instantiate()
+	add_child(purify_map)
+	await get_tree().process_frame
+	_run_life_boss_purify_smoke(purify_map)
+	purify_map.queue_free()
+	await get_tree().process_frame
+
 	var map := MapScene.instantiate()
 	add_child(map)
 	await get_tree().process_frame
@@ -11,7 +25,20 @@ func _ready() -> void:
 	var origin := Vector2i.ZERO
 	_assert(map.map_state.player_coord == origin, "player starts at origin")
 	_assert(map.map_state.action_points == 3, "action points start at 3")
-	_assert(map.card_controller.current_event_pool_id == "plague_outbreak", "initial stage uses plague event pool")
+	_assert(str(map.card_controller.current_encounter.get("id", "")) == "life_sprout_village", "initial stage uses life sprout village")
+	_assert(map.map_state.life == 24, "life sprout village starts at 24 life")
+	_assert(int(map.map_state.global_resources.get("materials", 0)) == 1, "life sprout village starts with one material")
+	_assert(map.tiles.size() >= 120, "expanded map has more than 120 tiles")
+	_assert(_terrain_kind_count(map) >= 5, "expanded map has varied terrain")
+	_assert(_entrance_count(map) >= 4, "expanded map has multiple entrances")
+	_assert(_hidden_state_count(map) >= 12, "expanded map has enough hidden states")
+	_assert(_populated_tile_count(map) >= 18, "expanded map has multiple populated tiles")
+	_assert(_resource_tile_count(map) >= 35, "expanded map has broad resource distribution")
+	_assert(_story_site_count(map) == 5, "map has five story sites")
+	_assert(str(map.tiles[origin].site_id) == "village_gate", "origin is village gate site")
+	var initial_snapshot: Dictionary = map._build_ui_snapshot()
+	_assert(_intent_contains(initial_snapshot.get("enemy_intents", []), "病村", "5 回合后"), "initial enemy intent shows stage countdown")
+	_start_legacy_smoke_stage(map)
 
 	map._select_tile(origin)
 	map._on_map_action_requested("gather")
@@ -52,11 +79,18 @@ func _ready() -> void:
 	_assert(map.map_state.action_points == 3, "end turn restores action points")
 	_assert(int(map.map_state.global_resources.get("faith", 0)) > faith_before, "end turn adds shrine faith")
 
-	map._select_tile(neighbor)
-	map.tiles[neighbor].hidden_states.append("polluted")
+	var investigate_coord := _find_investigation_tile(map)
+	map.map_state.player_coord = investigate_coord
+	map.map_state.selected_coord = investigate_coord
+	map.map_state.action_points = 3
+	map.render_layer.set_player_coord(investigate_coord)
+	map._select_tile(investigate_coord)
+	map.tiles[investigate_coord].explored = false
+	map.tiles[investigate_coord].hidden_states.clear()
+	map.tiles[investigate_coord].hidden_states.append("polluted")
 	var clues_before_investigate := int(map.map_state.inventory.get("suspicious_clue", 0))
 	map._on_map_action_requested("investigate")
-	_assert(map.tiles[neighbor].explored, "investigate explores current tile")
+	_assert(map.tiles[investigate_coord].explored, "investigate explores current tile")
 	_assert(int(map.map_state.inventory.get("suspicious_clue", 0)) == clues_before_investigate + 1, "investigate adds clue item")
 
 	var pressure_before: int = map.map_state.secrecy_pressure
@@ -80,6 +114,7 @@ func _ready() -> void:
 	map.card_controller.pending_event = _event_from_pool(map, "plague_outbreak", "patient_worsens")
 	var locked_life_preview: Dictionary = map._build_ui_snapshot()
 	_assert(_response_bonus_status_contains(locked_life_preview.get("pending_event_response_preview", []), "handled", "未解锁 生命倾向 0/2"), "life route bonus starts locked")
+	_assert(_intent_contains(locked_life_preview.get("enemy_intents", []), "预兆", "本回合"), "pending event appears in enemy intents")
 	map.card_controller.hand = ["weak_heal"]
 	map.card_controller.resources["action_points"] = 3
 	map.card_controller.resources["will"] = 1
@@ -434,6 +469,8 @@ func _ready() -> void:
 	map._on_map_action_requested("end_turn")
 	_assert(map.map_state.organization_hunt_pending, "organization hunt creates a warning before raid")
 	_assert(int(map.map_state.global_resources.get("apostles", 0)) == apostles_before_hunt, "organization hunt warning does not remove an apostle immediately")
+	var hunt_warning_snapshot: Dictionary = map._build_ui_snapshot()
+	_assert(_intent_contains(hunt_warning_snapshot.get("enemy_intents", []), "追猎锁定", "立即"), "hunt warning appears in enemy intents")
 	map.card_controller.hand = ["hide_tracks"]
 	map.card_controller.resources["action_points"] = 3
 	map.card_controller.play_card(0)
@@ -505,6 +542,8 @@ func _ready() -> void:
 	var pressure_before_attention_turn: int = map.map_state.secrecy_pressure
 	map._on_map_action_requested("end_turn")
 	_assert(map.map_state.secrecy_pressure == pressure_before_attention_turn + 1, "enemy attention raises pressure when ending turn there")
+	var attention_snapshot: Dictionary = map._build_ui_snapshot()
+	_assert(_intent_contains(attention_snapshot.get("enemy_intents", []), "地块盯梢", "回合结算"), "enemy attention appears in enemy intents")
 	_assert(_action_enabled(map._build_actions(), "clear_enemy_attention"), "enemy attention enables cleanup action")
 	_assert(_action_summary_contains(map._build_actions(), "clear_enemy_attention", "治疗 +1"), "cleanup preview shows life route reward")
 	_assert(_action_summary_contains(map._build_actions(), "clear_enemy_attention", "生命倾向 +1"), "cleanup preview shows route affinity reward")
@@ -520,6 +559,147 @@ func _ready() -> void:
 	get_tree().quit()
 
 
+func _run_story_site_smoke(map: Node) -> void:
+	var expected_sites := {
+		Vector2i.ZERO: "village_gate",
+		Vector2i(1, 0): "sick_house",
+		Vector2i(0, 1): "old_well",
+		Vector2i(-1, 1): "ruined_shrine",
+		Vector2i(-1, 0): "graveyard",
+	}
+	for coord in expected_sites.keys():
+		_assert(map.tiles.has(coord), "story site coord exists: " + str(coord))
+		_assert(str(map.tiles[coord].site_id) == str(expected_sites[coord]), "story site id matches: " + str(expected_sites[coord]))
+		var tile_snapshot: Dictionary = map._build_tile_snapshot(map.tiles[coord])
+		_assert(str(tile_snapshot.get("site_name", "")) != "", "story site appears in tile snapshot")
+
+	_warp_to(map, Vector2i(0, 1))
+	var clues_before := int(map.card_controller.progress.get("source_clues", 0))
+	map._on_map_action_requested("investigate")
+	_assert(map.tiles[Vector2i(0, 1)].explored, "old well investigate explores site")
+	_assert(map.tiles[Vector2i(0, 1)].entrance_revealed, "old well investigate reveals entrance")
+	_assert(int(map.card_controller.progress.get("source_clues", 0)) == clues_before + 1, "old well investigate adds source clue")
+
+	_warp_to(map, Vector2i(1, 0))
+	var followers_before := int(map.map_state.global_resources.get("followers", 0))
+	var cure_before := int(map.card_controller.progress.get("cure_progress", 0))
+	_assert(_action_enabled(map._build_actions(), "settle_wounded"), "sick house enables settle wounded")
+	map._on_map_action_requested("settle_wounded")
+	_assert(map.tiles[Vector2i(1, 0)].has_state("settled_wounded"), "settle wounded marks sick house")
+	_assert(int(map.map_state.global_resources.get("followers", 0)) == followers_before + 1, "settle wounded adds follower")
+	_assert(int(map.card_controller.progress.get("cure_progress", 0)) == cure_before + 1, "settle wounded advances cure")
+	_assert(int(map.card_controller.protected_followers) > 0, "settle wounded protects follower")
+
+	_warp_to(map, Vector2i(-1, 1))
+	map.map_state.global_resources["materials"] = 1
+	map.card_controller.resources["materials"] = 1
+	var anchor_before := int(map.card_controller.progress.get("anchor_progress", 0))
+	_assert(_action_enabled(map._build_actions(), "build_temporary_altar"), "ruined shrine enables temporary altar")
+	map._on_map_action_requested("build_temporary_altar")
+	_assert(map.tiles[Vector2i(-1, 1)].has_state("temporary_altar"), "temporary altar marks ruined shrine")
+	_assert(int(map.map_state.global_resources.get("materials", 0)) == 0, "temporary altar spends material")
+	_assert(int(map.card_controller.progress.get("anchor_progress", 0)) == anchor_before + 1, "temporary altar advances anchor")
+
+
+func _run_life_boss_purify_smoke(map: Node) -> void:
+	var origin := Vector2i.ZERO
+	map._select_tile(origin)
+	map.card_controller.progress["source_clues"] = 3
+	map.card_controller.progress["anchor_progress"] = 2
+	map.card_controller._start_boss("净化烟测")
+	map.card_controller._emit_state()
+	_assert(map.boss_battle_layer.visible, "boss battle layer appears when boss starts")
+	map.card_controller.boss_state["life"] = 6
+	map.card_controller.boss_state["lesion_shield"] = 0
+	map.card_controller.hand = ["sprout_rite"]
+	map.card_controller.resources["materials"] = 1
+	map.card_controller.resources["action_points"] = 3
+	map.map_state.global_resources["materials"] = 1
+	var deck_before: int = map.card_controller.persistent_deck.size()
+	map.card_controller.play_card(0)
+	_assert(map.card_controller.is_finished, "sprout rite finishes boss when purify conditions are met")
+	_assert(map.boss_battle_layer.visible, "boss battle layer stays visible after boss result")
+	_assert(str(map.card_controller.final_result.get("id", "")) == "purify", "sprout rite resolves purify outcome")
+	_assert(map.tiles[origin].has_state("sprout_village"), "purify outcome marks sprout village")
+	_assert(map.tiles[origin].has_state("anchor"), "purify outcome anchors current tile")
+	_assert(int(map.map_state.inventory.get("sprout_talisman", 0)) == 1, "purify outcome grants sprout talisman")
+	_assert(int(map.map_state.inventory.get("sick_child_name", 0)) == 1, "purify outcome grants sick child name")
+	_assert(map.card_controller.pending_reward_cards.size() == 3, "purify outcome offers three reward cards")
+	_assert(map.card_controller.choose_reward_card(0), "purify reward card can be claimed")
+	_assert(map.card_controller.pending_reward_cards.is_empty(), "claiming purify reward clears reward choices")
+	_assert(map.card_controller.persistent_deck.size() == deck_before + 1, "purify reward adds one chosen card")
+	_assert(map.map_state.level >= 2, "purify outcome grants enough experience to level once")
+
+
+func _start_legacy_smoke_stage(map: Node) -> void:
+	map.card_controller.persistent_deck.clear()
+	map.card_controller.start_demo("sick_village", map._get_stage_turn_events("plague_outbreak"), "plague_outbreak")
+	map.map_state.turn = 1
+	map.map_state.player_coord = Vector2i.ZERO
+	map.map_state.selected_coord = Vector2i.ZERO
+	map.map_state.action_points = 3
+	map.map_state.max_action_points = 3
+	map.map_state.life = 24
+	map.map_state.max_life = 24
+	map.map_state.experience = 0
+	map.map_state.level = 1
+	map.map_state.ascension_tier = 0
+	map.map_state.ascension_route = ""
+	map.map_state.power_card_upgraded = false
+	map.map_state.inventory.clear()
+	map.map_state.sanity_status = "稳定"
+	map.map_state.secrecy_pressure = 2
+	map.map_state.secrecy_status = "被追踪"
+	map.map_state.organization_hunt_pending = false
+	map.map_state.crisis_active = false
+	map.map_state.stage_resolved = false
+	map.map_state.stage_result_id = ""
+	map.map_state.stage_reward_pending = false
+	map.map_state.stage_reward_claimed = false
+	map.map_state.stage_reward_options.clear()
+	map.map_state.stage_node_pending = false
+	map.map_state.stage_node_options.clear()
+	map.map_state.stage_node_id = "sick_village"
+	map.map_state.stage_node_name = "病村"
+	map.map_state.route_affinity = {
+		"life": 0,
+		"faith": 0,
+		"death": 0,
+		"secret": 0,
+	}
+	map.map_state.route_bonus_threshold_mods = {
+		"life": 0,
+		"faith": 0,
+		"death": 0,
+		"secret": 0,
+	}
+	map.map_state.global_resources = {
+		"faith": 0,
+		"materials": 1,
+		"followers": 0,
+		"cult_cells": 0,
+		"apostles": 0,
+	}
+	map.map_state.event_key = "plague_outbreak"
+	map.map_state.event_countdown = 6
+	map.map_state.event_countdown_template = "疫情将在 {countdown} 回合后全面爆发"
+	map.map_state.event_crisis_summary = "疫情爆发"
+	map.map_state.event_crisis_log = "阶段事件：疫情全面爆发。前期准备将决定你能选择哪种结局。"
+	map.map_state.event_summary = map._format_stage_countdown_summary()
+	map.card_controller.countdown = map.map_state.event_countdown
+	map._sync_card_global_resources_from_map()
+	map.card_controller._emit_state()
+	map.render_layer.set_player_coord(Vector2i.ZERO)
+
+
+func _warp_to(map: Node, coord: Vector2i) -> void:
+	map.map_state.player_coord = coord
+	map.map_state.selected_coord = coord
+	map.map_state.action_points = 3
+	map.render_layer.set_player_coord(coord)
+	map._select_tile(coord)
+
+
 func _find_passable_neighbor(map: Node, origin: Vector2i) -> Vector2i:
 	for coord in map.tiles.keys():
 		if map._are_neighbors(origin, coord) and map.tiles[coord].is_passable():
@@ -527,11 +707,65 @@ func _find_passable_neighbor(map: Node, origin: Vector2i) -> Vector2i:
 	return Vector2i(999, 999)
 
 
+func _find_investigation_tile(map: Node) -> Vector2i:
+	for coord in map.tiles.keys():
+		var tile: RefCounted = map.tiles[coord]
+		if coord != map.map_state.player_coord and tile.is_passable() and str(tile.site_id) == "":
+			return coord
+	return map.map_state.player_coord
+
+
 func _find_tile_with_entrance(map: Node) -> Vector2i:
 	for coord in map.tiles.keys():
 		if map.tiles[coord].dungeon_entrance_id != "":
 			return coord
 	return Vector2i(999, 999)
+
+
+func _terrain_kind_count(map: Node) -> int:
+	var terrains := {}
+	for tile in map.tiles.values():
+		terrains[tile.terrain] = true
+	return terrains.size()
+
+
+func _entrance_count(map: Node) -> int:
+	var count := 0
+	for tile in map.tiles.values():
+		if tile.dungeon_entrance_id != "":
+			count += 1
+	return count
+
+
+func _hidden_state_count(map: Node) -> int:
+	var count := 0
+	for tile in map.tiles.values():
+		count += tile.hidden_states.size()
+	return count
+
+
+func _populated_tile_count(map: Node) -> int:
+	var count := 0
+	for tile in map.tiles.values():
+		if int(tile.population) > 0:
+			count += 1
+	return count
+
+
+func _resource_tile_count(map: Node) -> int:
+	var count := 0
+	for tile in map.tiles.values():
+		if not tile.resource_ids.is_empty():
+			count += 1
+	return count
+
+
+func _story_site_count(map: Node) -> int:
+	var count := 0
+	for tile in map.tiles.values():
+		if str(tile.site_id) != "":
+			count += 1
+	return count
 
 
 func _action_enabled(actions: Array, action_id: String) -> bool:
@@ -622,6 +856,22 @@ func _response_bonus_status_contains(previews: Array, mode: String, text: String
 		if typeof(preview) != TYPE_DICTIONARY:
 			continue
 		if str(preview.get("mode", "")) == mode and str(preview.get("route_bonus_status", "")).contains(text):
+			return true
+	return false
+
+
+func _intent_contains(intents: Array, title_text: String, detail_text: String) -> bool:
+	for intent in intents:
+		if typeof(intent) != TYPE_DICTIONARY:
+			continue
+		var haystack := "%s %s %s %s %s" % [
+			str(intent.get("title", "")),
+			str(intent.get("timing", "")),
+			str(intent.get("body", "")),
+			str(intent.get("consequence", "")),
+			str(intent.get("responses", "")),
+		]
+		if haystack.contains(title_text) and haystack.contains(detail_text):
 			return true
 	return false
 

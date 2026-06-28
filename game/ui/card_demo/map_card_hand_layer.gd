@@ -12,11 +12,11 @@ const TEXT_COLOR := Color(0.92, 0.87, 0.76, 1.0)
 const CARD_TEXT_COLOR := Color(0.18, 0.12, 0.07, 1.0)
 const CARD_FRAME_PATH := "res://assets/generated/card_demo/card_frame_front.png"
 const CARD_FRAME_BASE_SIZE := Vector2(420, 588)
-const CARD_SIZE := Vector2(196, 274)
-const CARD_PREVIEW_SIZE := Vector2(260, 364)
-const BOTTOM_PANEL_HEIGHT := 430.0
-const ACTION_DOCK_WIDTH := 430.0
-const CARD_LOG_WIDTH := 520.0
+const CARD_SIZE := Vector2(160, 224)
+const CARD_PREVIEW_SIZE := Vector2(220, 308)
+const BOTTOM_PANEL_HEIGHT := 300.0
+const ACTION_DOCK_WIDTH := 390.0
+const COMMAND_DOCK_WIDTH := 210.0
 const INVENTORY_SLOT_COUNT := 12
 const INVENTORY_POPUP_SIZE := Vector2(760, 500)
 const INVENTORY_SLOT_SIZE := Vector2(170, 128)
@@ -39,7 +39,6 @@ var inventory_button: Button
 var inventory_popup: PanelContainer
 var inventory_grid: GridContainer
 var map_actions_grid: GridContainer
-var map_log_label: RichTextLabel
 var hand_box: HBoxContainer
 var log_label: RichTextLabel
 var end_turn_button: Button
@@ -102,7 +101,7 @@ func _build_view() -> void:
 	offset_top = 0
 	offset_right = 0
 	offset_bottom = 0
-	mouse_filter = Control.MOUSE_FILTER_PASS
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -114,13 +113,13 @@ func _build_view() -> void:
 	margin.add_theme_constant_override("margin_top", _scaled_int(28))
 	margin.add_theme_constant_override("margin_right", _scaled_int(28))
 	margin.add_theme_constant_override("margin_bottom", _scaled_int(28))
-	margin.mouse_filter = Control.MOUSE_FILTER_PASS
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(margin)
 
 	var root := VBoxContainer.new()
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.mouse_filter = Control.MOUSE_FILTER_PASS
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(root)
 
 	var spacer := Control.new()
@@ -133,6 +132,7 @@ func _build_view() -> void:
 	play_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	play_hint_label.add_theme_color_override("font_color", Color(0.95, 0.78, 0.36, 1.0))
 	play_hint_label.visible = false
+	play_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(play_hint_label)
 
 	hand_panel = PanelContainer.new()
@@ -146,75 +146,74 @@ func _build_view() -> void:
 	var row := HBoxContainer.new()
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	row.add_theme_constant_override("separation", _scaled_int(12))
+	row.add_theme_constant_override("separation", _scaled_int(10))
 	hand_panel.add_child(row)
 
 	var action_dock := VBoxContainer.new()
 	action_dock.custom_minimum_size = Vector2(_scaled(ACTION_DOCK_WIDTH), 0)
-	action_dock.add_theme_constant_override("separation", _scaled_int(7))
+	action_dock.add_theme_constant_override("separation", _scaled_int(5))
 	row.add_child(action_dock)
 
 	var action_header := HBoxContainer.new()
 	action_header.add_theme_constant_override("separation", _scaled_int(8))
 	action_dock.add_child(action_header)
 
-	var action_title := _make_label(20)
-	action_title.text = "普通行动"
+	var action_title := _make_label(18)
+	action_title.text = "地图操作"
 	action_title.add_theme_color_override("font_color", ACCENT_COLOR)
 	action_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	action_header.add_child(action_title)
 
 	inventory_button = Button.new()
 	inventory_button.text = "背包 0/%s" % str(INVENTORY_SLOT_COUNT)
-	inventory_button.custom_minimum_size = Vector2(_scaled(132), _scaled(40))
-	inventory_button.add_theme_font_size_override("font_size", _scaled_int(17))
+	inventory_button.custom_minimum_size = Vector2(_scaled(116), _scaled(34))
+	inventory_button.add_theme_font_size_override("font_size", _scaled_int(15))
 	inventory_button.pressed.connect(_toggle_inventory_popup)
 	action_header.add_child(inventory_button)
 
-	map_status_label = _make_label(17)
+	map_status_label = _make_label(15)
 	action_dock.add_child(map_status_label)
 
+	var action_scroll := ScrollContainer.new()
+	action_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	action_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	action_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	action_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	action_dock.add_child(action_scroll)
+
 	map_actions_grid = GridContainer.new()
-	map_actions_grid.columns = 4
+	map_actions_grid.columns = 2
 	map_actions_grid.add_theme_constant_override("h_separation", _scaled_int(6))
 	map_actions_grid.add_theme_constant_override("v_separation", _scaled_int(6))
-	action_dock.add_child(map_actions_grid)
-
-	map_log_label = RichTextLabel.new()
-	map_log_label.bbcode_enabled = false
-	map_log_label.fit_content = false
-	map_log_label.scroll_active = true
-	map_log_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	map_log_label.add_theme_font_size_override("normal_font_size", _scaled_int(15))
-	map_log_label.add_theme_color_override("default_color", Color(0.72, 0.67, 0.58, 1.0))
-	action_dock.add_child(map_log_label)
+	map_actions_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	action_scroll.add_child(map_actions_grid)
 
 	var card_zone := VBoxContainer.new()
 	card_zone.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_zone.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	card_zone.add_theme_constant_override("separation", _scaled_int(6))
+	card_zone.add_theme_constant_override("separation", _scaled_int(4))
 	row.add_child(card_zone)
 
 	var card_header := HBoxContainer.new()
-	card_header.custom_minimum_size = Vector2(0, _scaled(28))
-	card_header.add_theme_constant_override("separation", _scaled_int(12))
+	card_header.custom_minimum_size = Vector2(0, _scaled(24))
+	card_header.add_theme_constant_override("separation", _scaled_int(10))
 	card_zone.add_child(card_header)
 
-	title_label = _make_label(19)
+	title_label = _make_label(17)
 	_set_single_line_label(title_label)
-	title_label.custom_minimum_size = Vector2(0, _scaled(26))
+	title_label.custom_minimum_size = Vector2(0, _scaled(22))
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_header.add_child(title_label)
 
-	resource_label = _make_label(16)
+	resource_label = _make_label(15)
 	_set_single_line_label(resource_label)
-	resource_label.custom_minimum_size = Vector2(0, _scaled(26))
+	resource_label.custom_minimum_size = Vector2(0, _scaled(22))
 	resource_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_header.add_child(resource_label)
 
-	progress_label = _make_label(16)
+	progress_label = _make_label(15)
 	_set_single_line_label(progress_label)
-	progress_label.custom_minimum_size = Vector2(0, _scaled(26))
+	progress_label.custom_minimum_size = Vector2(0, _scaled(22))
 	progress_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_header.add_child(progress_label)
 
@@ -228,46 +227,40 @@ func _build_view() -> void:
 	hand_box = HBoxContainer.new()
 	hand_box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	hand_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	hand_box.add_theme_constant_override("separation", _scaled_int(8))
+	hand_box.add_theme_constant_override("separation", _scaled_int(7))
 	scroll.add_child(hand_box)
 
-	var side := VBoxContainer.new()
-	side.custom_minimum_size = Vector2(_scaled(CARD_LOG_WIDTH), 0)
-	side.add_theme_constant_override("separation", _scaled_int(6))
-	row.add_child(side)
+	var command_dock := VBoxContainer.new()
+	command_dock.custom_minimum_size = Vector2(_scaled(COMMAND_DOCK_WIDTH), 0)
+	command_dock.add_theme_constant_override("separation", _scaled_int(8))
+	row.add_child(command_dock)
 
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", _scaled_int(8))
-	side.add_child(header)
-	var log_title := _make_label(19)
-	log_title.text = "关卡日志"
-	log_title.add_theme_color_override("font_color", ACCENT_COLOR)
-	header.add_child(log_title)
-	var header_spacer := Control.new()
-	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(header_spacer)
+	var command_title := _make_label(18)
+	command_title.text = "回合"
+	command_title.add_theme_color_override("font_color", ACCENT_COLOR)
+	command_dock.add_child(command_title)
+
 	end_turn_button = Button.new()
 	end_turn_button.text = "结束回合"
-	end_turn_button.custom_minimum_size = Vector2(_scaled(124), _scaled(42))
+	end_turn_button.custom_minimum_size = Vector2(0, _scaled(44))
+	end_turn_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	end_turn_button.add_theme_font_size_override("font_size", _scaled_int(17))
 	end_turn_button.pressed.connect(func(): end_turn_requested.emit())
-	header.add_child(end_turn_button)
+	command_dock.add_child(end_turn_button)
 
 	restart_button = Button.new()
 	restart_button.text = "重开关卡"
-	restart_button.custom_minimum_size = Vector2(_scaled(114), _scaled(42))
-	restart_button.add_theme_font_size_override("font_size", _scaled_int(17))
+	restart_button.custom_minimum_size = Vector2(0, _scaled(36))
+	restart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	restart_button.add_theme_font_size_override("font_size", _scaled_int(15))
 	restart_button.pressed.connect(func(): controller.start_demo())
-	header.add_child(restart_button)
+	command_dock.add_child(restart_button)
 
-	log_label = RichTextLabel.new()
-	log_label.bbcode_enabled = false
-	log_label.fit_content = false
-	log_label.scroll_active = true
-	log_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	log_label.add_theme_font_size_override("normal_font_size", _scaled_int(16))
-	log_label.add_theme_color_override("default_color", TEXT_COLOR)
-	side.add_child(log_label)
+	var command_hint := _make_label(14)
+	command_hint.text = "拖拽到地图上方打出。\n右侧查看意图与记录。"
+	command_hint.add_theme_color_override("font_color", Color(0.76, 0.70, 0.60, 1.0))
+	command_hint.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	command_dock.add_child(command_hint)
 
 	_build_inventory_popup()
 	_update_map_actions()
@@ -281,26 +274,46 @@ func _on_state_changed(snapshot: Dictionary) -> void:
 
 func _update_summary(snapshot: Dictionary) -> void:
 	var encounter: Dictionary = snapshot.get("encounter", {})
-	title_label.text = "%s  |  %s 回合后：%s" % [
-		str(encounter.get("name", "")),
-		str(snapshot.get("countdown", 0)),
-		str(encounter.get("final_event", "")),
-	]
+	var phase := str(snapshot.get("phase", "preparation"))
+	if phase == "boss":
+		var boss: Dictionary = snapshot.get("boss", {})
+		var intent: Dictionary = boss.get("intent", {})
+		title_label.text = "%s  |  关底战：%s" % [str(encounter.get("name", "")), str(boss.get("name", "溃疡使徒"))]
+		progress_label.text = "使徒生命 %s/%s  护层 %s  意图：%s" % [
+			str(boss.get("life", 0)),
+			str(boss.get("max_life", 0)),
+			str(boss.get("lesion_shield", 0)),
+			str(intent.get("name", "")),
+		]
+	elif phase == "finished":
+		var result: Dictionary = snapshot.get("final_result", {})
+		title_label.text = "%s  |  %s" % [str(encounter.get("name", "")), str(result.get("name", "关卡结束"))]
+		if not snapshot.get("pending_reward_cards", []).is_empty():
+			progress_label.text = "选择 1 张新牌加入牌组"
+		else:
+			progress_label.text = str(result.get("text", ""))
+	else:
+		title_label.text = "%s  |  %s 回合后：%s" % [
+			str(encounter.get("name", "")),
+			str(snapshot.get("countdown", 0)),
+			str(encounter.get("final_event", "")),
+		]
+		var progress: Dictionary = snapshot.get("progress", {})
+		progress_label.text = "病势 %s/6  病源线索 %s/3  初生锚点 %s/3  蓄力 %s" % [
+			str(progress.get("infection", 0)),
+			str(progress.get("source_clues", 0)),
+			str(progress.get("anchor_progress", 0)),
+			str(progress.get("enemy_charge", 0)),
+		]
 	var resources: Dictionary = snapshot.get("resources", {})
-	resource_label.text = "牌 AP %s/%s  信仰 %s  灵性 %s  材料 %s" % [
+	resource_label.text = "牌 AP %s/%s  生命 %s/%s  信仰 %s  材料 %s  信徒 %s" % [
 		str(resources.get("action_points", 0)),
 		str(encounter.get("action_points", 3)),
+		str(resources.get("life", 0)),
+		str(resources.get("max_life", 0)),
 		str(resources.get("faith", 0)),
-		str(resources.get("will", 0)),
 		str(resources.get("materials", 0)),
-	]
-	var progress: Dictionary = snapshot.get("progress", {})
-	progress_label.text = "治疗 %s  线索 %s  锚点 %s  感染 %s  怀疑 %s" % [
-		str(progress.get("cure_progress", 0)),
-		str(progress.get("source_clues", 0)),
-		str(progress.get("anchor_progress", 0)),
-		str(progress.get("infection", 0)),
-		str(progress.get("suspicion", 0)),
+		str(resources.get("followers", 0)),
 	]
 	end_turn_button.disabled = bool(snapshot.get("is_finished", false))
 
@@ -308,68 +321,13 @@ func _update_summary(snapshot: Dictionary) -> void:
 func _update_map_actions() -> void:
 	if map_status_label == null or map_actions_grid == null:
 		return
-	var resources: Dictionary = map_snapshot.get("global_resources", {})
-	var stage_text := "最终事件处理中" if bool(map_snapshot.get("crisis_active", false)) else str(map_snapshot.get("event_summary", ""))
-	var pending_event: Dictionary = map_snapshot.get("pending_event", {})
-	if not pending_event.is_empty():
-		var options: Array[String] = ["放任"]
-		if not pending_event.get("handled_effects", []).is_empty():
-			options.append("处理")
-		if not pending_event.get("converted_effects", []).is_empty():
-			options.append("转化")
-		if not pending_event.get("exploited_effects", []).is_empty():
-			options.append("利用")
-		stage_text += "\n预兆：%s（%s）" % [str(pending_event.get("name", "")), " / ".join(options)]
-		for preview in map_snapshot.get("pending_event_response_preview", []):
-			if typeof(preview) != TYPE_DICTIONARY:
-				continue
-			stage_text += "\n%s AP%s：%s" % [
-				str(preview.get("name", "")),
-				str(preview.get("cost", 0)),
-				str(preview.get("summary", "")),
-			]
-			var bonus_status := str(preview.get("route_bonus_status", ""))
-			if not bonus_status.is_empty():
-				stage_text += "\n路线：%s" % bonus_status
-	if bool(map_snapshot.get("stage_reward_pending", false)):
-		var reward_lines: Array[String] = ["阶段奖励：选择一种成长"]
-		for reward in map_snapshot.get("stage_reward_options", []):
-			if typeof(reward) != TYPE_DICTIONARY:
-				continue
-			reward_lines.append("%s：%s" % [
-				str(reward.get("name", "")),
-				str(reward.get("effect_summary", "")),
-			])
-		stage_text = "\n".join(reward_lines)
-	if bool(map_snapshot.get("stage_node_pending", false)):
-		var node_lines: Array[String] = ["选择下个节点"]
-		for node in map_snapshot.get("stage_node_options", []):
-			if typeof(node) != TYPE_DICTIONARY:
-				continue
-			node_lines.append("%s（%s 回合）：%s" % [
-				str(node.get("name", "")),
-				str(node.get("turn_limit", 0)),
-				str(node.get("effect_summary", "")),
-			])
-		stage_text = "\n".join(node_lines)
-	map_status_label.text = "地图 AP %s/%s  生命 %s/%s\n节点 %s  位置 %s\n信仰 %s  材料 %s  信徒 %s\n%s" % [
-		str(map_snapshot.get("action_points", 0)),
-		str(map_snapshot.get("max_action_points", 0)),
-		str(map_snapshot.get("life", 0)),
-		str(map_snapshot.get("max_life", 0)),
-		str(map_snapshot.get("stage_node_name", "病村")),
-		str(map_snapshot.get("player_coord", Vector2i.ZERO)),
-		str(resources.get("faith", 0)),
-		str(resources.get("materials", 0)),
-		str(resources.get("followers", 0)),
-		stage_text,
-	]
+	map_status_label.text = _format_action_context()
 	_refresh_inventory_popup()
 	for child in map_actions_grid.get_children():
 		map_actions_grid.remove_child(child)
 		child.queue_free()
 	var actions: Array = map_snapshot.get("actions", [])
-	map_actions_grid.columns = 2 if _actions_are_stage_choices(actions) else 4
+	map_actions_grid.columns = 2 if _actions_are_stage_choices(actions) else 3
 	for action in actions:
 		if typeof(action) != TYPE_DICTIONARY:
 			continue
@@ -377,7 +335,62 @@ func _update_map_actions() -> void:
 		if action_id == "end_turn":
 			continue
 		map_actions_grid.add_child(_make_map_action_button(action, action_id))
-	_update_map_log()
+
+
+func _format_action_context() -> String:
+	if map_snapshot.is_empty():
+		return "选择地块后执行地图操作。"
+	if bool(map_snapshot.get("stage_node_pending", false)):
+		return "阶段已完成：选择下一个危机节点。"
+	if bool(map_snapshot.get("stage_reward_pending", false)):
+		return "阶段奖励：选择一种成长。"
+	if bool(map_snapshot.get("crisis_active", false)) and not bool(map_snapshot.get("stage_resolved", false)):
+		return "最终事件已经爆发：先选择处理方式。"
+	if bool(map_snapshot.get("organization_hunt_pending", false)):
+		return "追猎预警：本回合必须回应敌方搜查。"
+	var pending_event: Dictionary = map_snapshot.get("pending_event", {})
+	if not pending_event.is_empty():
+		return "预兆事件：%s\n可在下方选择处理、转化、利用或放任。" % str(pending_event.get("name", ""))
+	var selected: Dictionary = map_snapshot.get("selected_tile", {})
+	var current: Dictionary = map_snapshot.get("current_tile", {})
+	var lines: Array[String] = []
+	if not selected.is_empty():
+		lines.append("选中：%s｜%s%s" % [
+			str(selected.get("coord", Vector2i.ZERO)),
+			str(selected.get("terrain_name", "")),
+			_site_suffix(selected),
+		])
+	if not current.is_empty():
+		lines.append("当前位置：%s｜%s%s" % [
+			str(current.get("coord", Vector2i.ZERO)),
+			str(current.get("terrain_name", "")),
+			_site_suffix(current),
+		])
+	var summaries := _visible_action_summaries()
+	for summary in summaries:
+		lines.append(summary)
+	return "\n".join(lines) if not lines.is_empty() else "选择地块后执行移动、调查、采集或组织行动。"
+
+
+func _site_suffix(tile: Dictionary) -> String:
+	var site_name := str(tile.get("site_name", ""))
+	return "" if site_name.is_empty() else "｜" + site_name
+
+
+func _visible_action_summaries() -> Array[String]:
+	var lines: Array[String] = []
+	for action in map_snapshot.get("actions", []):
+		if typeof(action) != TYPE_DICTIONARY:
+			continue
+		if not bool(action.get("enabled", false)):
+			continue
+		var summary := str(action.get("summary", ""))
+		if summary.is_empty():
+			continue
+		lines.append("%s：%s" % [str(action.get("label", action.get("id", ""))), summary])
+		if lines.size() >= 2:
+			break
+	return lines
 
 
 func _build_inventory_popup() -> void:
@@ -521,19 +534,28 @@ func _make_inventory_slot(entry: Dictionary) -> PanelContainer:
 
 func _make_map_action_button(action: Dictionary, action_id: String) -> Button:
 	var button := Button.new()
+	var label := str(action.get("label", action_id))
+	var enabled := bool(action.get("enabled", false))
+	var cost := int(action.get("cost", 0))
+	var title := label if cost <= 0 else "%s AP%s" % [label, str(cost)]
+	var detail := str(action.get("summary", "")) if enabled else str(action.get("reason", ""))
 	if action_id.begins_with("claim_reward:") or action_id.begins_with("choose_node:"):
-		var summary := str(action.get("summary", ""))
-		button.text = "%s\n%s" % [str(action.get("label", action_id)), summary]
-		button.custom_minimum_size = Vector2(_scaled(196), _scaled(70))
+		button.text = title if detail.is_empty() else "%s\n%s" % [title, _short_text(detail, 22)]
+		button.custom_minimum_size = Vector2(_scaled(176), _scaled(58))
 		button.add_theme_font_size_override("font_size", _scaled_int(13))
 	else:
-		button.text = str(action.get("label", action_id))
-		button.custom_minimum_size = Vector2(_scaled(96), _scaled(40))
-		button.add_theme_font_size_override("font_size", _scaled_int(16))
-	button.disabled = not bool(action.get("enabled", false))
-	button.tooltip_text = str(action.get("reason", ""))
+		button.text = title if detail.is_empty() else "%s\n%s" % [title, _short_text(detail, 14)]
+		button.custom_minimum_size = Vector2(_scaled(174), _scaled(44))
+		button.add_theme_font_size_override("font_size", _scaled_int(13))
+	button.disabled = not enabled
 	button.pressed.connect(func(): map_action_requested.emit(action_id))
 	return button
+
+
+func _short_text(value: String, max_length: int) -> String:
+	if value.length() <= max_length:
+		return value
+	return value.substr(0, max(1, max_length - 1)) + "…"
 
 
 func _actions_are_stage_choices(actions: Array) -> bool:
@@ -548,23 +570,39 @@ func _actions_are_stage_choices(actions: Array) -> bool:
 	return false
 
 
-func _update_map_log() -> void:
-	if map_log_label == null:
-		return
-	map_log_label.clear()
-	var messages: Array = map_snapshot.get("log", [])
-	var start: int = max(0, messages.size() - 4)
-	for i in range(start, messages.size()):
-		map_log_label.append_text(str(messages[i]) + "\n")
-	map_log_label.scroll_to_line(max(0, map_log_label.get_line_count() - 1))
-
-
 func _update_hand(snapshot: Dictionary) -> void:
 	for child in hand_box.get_children():
 		child.queue_free()
+	var reward_cards: Array = snapshot.get("pending_reward_cards", [])
+	if not reward_cards.is_empty():
+		for card in reward_cards:
+			if typeof(card) == TYPE_DICTIONARY:
+				hand_box.add_child(_make_reward_card_choice(card))
+		return
 	var cards: Array = snapshot.get("hand", [])
 	for card in cards:
 		hand_box.add_child(_make_card_view(card, bool(snapshot.get("is_finished", false))))
+
+
+func _make_reward_card_choice(card: Dictionary) -> Control:
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(CARD_SIZE.x * ui_scale, 0)
+	box.add_theme_constant_override("separation", _scaled_int(6))
+	box.mouse_filter = Control.MOUSE_FILTER_STOP
+	box.add_child(_make_card_view(card, false, true))
+
+	var button := Button.new()
+	button.text = "选择"
+	button.custom_minimum_size = Vector2(0, _scaled(38))
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.add_theme_font_size_override("font_size", _scaled_int(16))
+	var choice_index := int(card.get("reward_index", -1))
+	button.pressed.connect(func():
+		if controller != null:
+			controller.choose_reward_card(choice_index)
+	)
+	box.add_child(button)
+	return box
 
 
 func _make_card_view(card: Dictionary, encounter_finished: bool, preview: bool = false) -> Control:
@@ -576,7 +614,7 @@ func _make_card_view(card: Dictionary, encounter_finished: bool, preview: bool =
 	card_root.size = card_size
 	card_root.clip_contents = true
 	card_root.mouse_filter = Control.MOUSE_FILTER_STOP
-	card_root.modulate = Color(1, 1, 1, 0.56) if disabled else Color.WHITE
+	card_root.modulate = Color(1, 1, 1, 0.70) if disabled else Color.WHITE
 
 	var frame := TextureRect.new()
 	frame.position = Vector2.ZERO
@@ -628,11 +666,18 @@ func _make_card_view(card: Dictionary, encounter_finished: bool, preview: bool =
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card_root.add_child(art)
 
+	var text_plate := Panel.new()
+	text_plate.position = Vector2(72, 380) * scale_factor
+	text_plate.size = Vector2(276, 116) * scale_factor
+	text_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_plate.add_theme_stylebox_override("panel", _make_card_text_plate_style())
+	card_root.add_child(text_plate)
+
 	_add_clipped_label(
 		card_root,
-		Rect2(Vector2(74, 388) * scale_factor, Vector2(272, 104) * scale_factor),
-		str(card.get("text", "")),
-		int((27 if not preview else 29) * scale_factor),
+		Rect2(Vector2(82, 394) * scale_factor, Vector2(252, 78) * scale_factor),
+		_short_text(str(card.get("text", "")), 36 if not preview else 48),
+		int((23 if not preview else 25) * scale_factor),
 		CARD_TEXT_COLOR,
 		true
 	)
@@ -718,6 +763,8 @@ func _update_play_hint(screen_position: Vector2) -> void:
 
 
 func _update_log(snapshot: Dictionary) -> void:
+	if log_label == null:
+		return
 	log_label.clear()
 	var messages: Array = snapshot.get("log", [])
 	var start: int = max(0, messages.size() - 6)
@@ -763,6 +810,19 @@ func _make_badge_style() -> StyleBoxFlat:
 	style.border_color = Color(0.20, 0.12, 0.05, 1.0)
 	style.set_border_width_all(_scaled_int(2))
 	style.set_corner_radius_all(_scaled_int(14))
+	return style
+
+
+func _make_card_text_plate_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.74, 0.62, 0.43, 0.96)
+	style.border_color = Color(0.30, 0.20, 0.12, 0.90)
+	style.set_border_width_all(_scaled_int(1))
+	style.set_corner_radius_all(_scaled_int(3))
+	style.content_margin_left = _scaled_int(4)
+	style.content_margin_top = _scaled_int(4)
+	style.content_margin_right = _scaled_int(4)
+	style.content_margin_bottom = _scaled_int(4)
 	return style
 
 

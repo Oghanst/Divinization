@@ -205,5 +205,117 @@
         "text": "你把疫病残材调成冷灰，死亡路线更容易回应。"
       }
     ]
+  },
+  {
+    "id": "cleansing_water_vial",
+    "name": "净水瓶",
+    "description": "封存过的净水，可压下一张污染牌或冲淡旧井的病势。",
+    "use_label": "洒净水",
+    "use_action_point_cost": 1,
+    "use_effects": [
+      {
+        "scope": "card_progress",
+        "key": "infection",
+        "delta": -1
+      },
+      {
+        "scope": "tile_state",
+        "state": "polluted",
+        "op": "remove"
+      },
+      {
+        "scope": "log",
+        "text": "净水沿着石缝渗下，污染短暂退去。"
+      }
+    ]
+  },
+  {
+    "id": "herbal_satchel",
+    "name": "草药包",
+    "description": "为病村准备的草药包，可恢复生命并推进治疗。",
+    "use_label": "敷草药",
+    "use_action_point_cost": 1,
+    "use_effects": [
+      {
+        "scope": "player_life",
+        "delta": 4
+      },
+      {
+        "scope": "card_progress",
+        "key": "cure_progress",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "草药包稳住了伤口，也让治疗准备更扎实。"
+      }
+    ]
+  },
+  {
+    "id": "ulcer_skin",
+    "name": "溃疡残皮",
+    "description": "击杀溃疡使徒后留下的残皮，可作为后续仪式材料。",
+    "use_label": "刮取残材",
+    "use_action_point_cost": 0,
+    "use_effects": [
+      {
+        "scope": "global_resource",
+        "key": "materials",
+        "delta": 1
+      },
+      {
+        "scope": "card_discard",
+        "card_id": "pus_blood"
+      },
+      {
+        "scope": "log",
+        "text": "残皮变成可用材料，脓血也跟着进入牌组。"
+      }
+    ]
+  },
+  {
+    "id": "sprout_talisman",
+    "name": "新芽木符",
+    "description": "净化病村后留下的木符，能强化一次治愈回应。",
+    "use_label": "捏碎木符",
+    "use_action_point_cost": 0,
+    "use_effects": [
+      {
+        "scope": "card_progress",
+        "key": "cure_progress",
+        "delta": 1
+      },
+      {
+        "scope": "player_life",
+        "delta": 2
+      },
+      {
+        "scope": "log",
+        "text": "新芽木符化作温热木屑，治愈回应更清晰。"
+      }
+    ]
+  },
+  {
+    "id": "sick_child_name",
+    "name": "病童的名字",
+    "description": "被救下的关键病人的名字，是后续生命晋升仪式的重要锚点。",
+    "use_label": "守住名字",
+    "use_action_point_cost": 0,
+    "use_effects": [
+      {
+        "scope": "card_progress",
+        "key": "anchor_progress",
+        "delta": 1
+      },
+      {
+        "scope": "route_affinity",
+        "route": "life",
+        "delta": 1
+      },
+      {
+        "scope": "log",
+        "text": "一个被记住的名字，成为生命路线的微小锚点。"
+      }
+    ]
   }
 ]

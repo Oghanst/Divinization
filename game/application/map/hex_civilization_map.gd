@@ -8,9 +8,17 @@ const HexMapGeneratorScript := preload("res://game/domain/map/hex/hex_map_genera
 const PlayerMapStateScript := preload("res://game/domain/map/hex/player_map_state.gd")
 
 const PLAYER_OWNER := "隐秘教团"
+const TERRAIN_PLAIN := "plain"
 const TERRAIN_FOREST := "forest"
+const TERRAIN_HILL := "hill"
 const TERRAIN_RUIN := "ruin"
 const TERRAIN_WATER := "water"
+const TERRAIN_HOLY_SITE := "holy_site"
+const SITE_VILLAGE_GATE := "village_gate"
+const SITE_SICK_HOUSE := "sick_house"
+const SITE_OLD_WELL := "old_well"
+const SITE_RUINED_SHRINE := "ruined_shrine"
+const SITE_GRAVEYARD := "graveyard"
 const BUILDING_DEFS_PATH := "res://data/demo/hex_map/building_defs.json"
 const STATE_DEFS_PATH := "res://data/demo/hex_map/state_defs.json"
 const MAP_ACTION_DEFS_PATH := "res://data/demo/hex_map/map_action_defs.json"
@@ -135,8 +143,8 @@ const ENEMY_ATTENTION_CLEAR_EFFECTS := {
 	],
 }
 
-@export var map_radius: int = 4
-@export var hex_size: float = 52.0
+@export var map_radius: int = 6
+@export var hex_size: float = 46.0
 @export var map_seed: int = 20260625
 @export var keyboard_pan_speed: float = 520.0
 @export var min_zoom: float = 0.55
@@ -148,6 +156,7 @@ const ENEMY_ATTENTION_CLEAR_EFFECTS := {
 @onready var camera_controller: Node = $MapInputController
 @onready var status_panel: Control = $MapUILayer/CivilizationStatusPanel
 @onready var card_controller: CardRunController = $CardRunController
+@onready var boss_battle_layer: Control = $BossUILayer/BossBattleLayer
 @onready var card_hand_layer: MapCardHandLayer = $CardUILayer/MapCardHandLayer
 
 var tiles: Dictionary = {}
@@ -205,6 +214,11 @@ func end_turn() -> void:
 func end_card_and_map_turn() -> void:
 	if card_controller != null:
 		card_controller.end_turn()
+		_sync_map_state_from_card_controller()
+		var card_snapshot := card_controller.get_snapshot()
+		if ["boss", "finished"].has(str(card_snapshot.get("phase", ""))):
+			_update_ui()
+			return
 	end_turn()
 
 
@@ -339,15 +353,155 @@ func _generate_map() -> void:
 
 
 func _seed_map_content() -> void:
+	var ruin_entrance_count := 0
+	var polluted_count := 0
+	var anchor_count := 0
+	var panic_count := 0
 	for tile in tiles.values():
 		tile.explored = false
-		if tile.terrain == TERRAIN_RUIN:
-			tile.set_dungeon_entrance("forgotten_cellar", "废弃地下室")
-			tile.hidden_states.append("enemy_attention")
-		elif tile.terrain == TERRAIN_FOREST and _coord_seed(tile.coord) % 3 == 0:
-			tile.hidden_states.append("anchor")
-		elif _coord_seed(tile.coord) % 7 == 0 and tile.terrain != TERRAIN_WATER:
+		var distance := _hex_distance(Vector2i.ZERO, tile.coord)
+		if tile.terrain != TERRAIN_WATER:
+			tile.population = _initial_population_for_tile(tile, distance)
+		if tile.terrain == TERRAIN_RUIN and ruin_entrance_count < max(4, map_radius - 1):
+			tile.set_dungeon_entrance(_entrance_id_for_index(ruin_entrance_count), _entrance_name_for_index(ruin_entrance_count))
+			ruin_entrance_count += 1
+			if not tile.hidden_states.has("enemy_attention"):
+				tile.hidden_states.append("enemy_attention")
+		elif tile.terrain == TERRAIN_RUIN and _coord_seed(tile.coord) % 2 == 0:
 			tile.hidden_states.append("polluted")
+		if tile.terrain == TERRAIN_FOREST and _coord_seed(tile.coord) % 3 == 0 and anchor_count < map_radius:
+			tile.hidden_states.append("anchor")
+			anchor_count += 1
+		if distance >= 3 and _coord_seed(tile.coord) % 7 == 0 and tile.terrain != TERRAIN_WATER and polluted_count < map_radius + 3:
+			tile.hidden_states.append("polluted")
+			polluted_count += 1
+		if distance >= 4 and _coord_seed(tile.coord) % 11 == 0 and tile.terrain != TERRAIN_WATER and panic_count < map_radius:
+			tile.hidden_states.append("panic")
+			panic_count += 1
+		if distance >= map_radius - 1 and tile.terrain != TERRAIN_WATER and _coord_seed(tile.coord) % 13 == 0:
+			tile.hidden_states.append("enemy_attention")
+	_seed_story_sites()
+
+
+func _seed_story_sites() -> void:
+	_apply_story_site(
+		Vector2i.ZERO,
+		SITE_VILLAGE_GATE,
+		"村口圣址",
+		"病村边界的第一处锚点，适合安置伤民并积累初生信仰。",
+		[],
+		"",
+		"",
+		3
+	)
+	_apply_story_site(
+		Vector2i(1, 0),
+		SITE_SICK_HOUSE,
+		"病屋",
+		"挤满高热病人与照护者的屋舍，救治和安置会更有效。",
+		["plague"],
+		"",
+		"",
+		4
+	)
+	_apply_story_site(
+		Vector2i(0, 1),
+		SITE_OLD_WELL,
+		"旧井",
+		"黑水下方传出低语，是追查病源真名的关键地点。",
+		["polluted"],
+		"old_well_tunnel",
+		"旧井暗道",
+		1
+	)
+	_apply_story_site(
+		Vector2i(-1, 1),
+		SITE_RUINED_SHRINE,
+		"废祠",
+		"旧神像已经倒塌，但仍能承载一次临时祭坛。",
+		["anchor"],
+		"sealed_shrine_room",
+		"封闭圣室",
+		0
+	)
+	_apply_story_site(
+		Vector2i(-1, 0),
+		SITE_GRAVEYARD,
+		"坟地",
+		"新坟太多，死亡和疫病的残留能被采样，也会让病势更危险。",
+		["polluted", "enemy_attention"],
+		"graveyard_underpass",
+		"墓园下层",
+		0
+	)
+
+
+func _apply_story_site(
+	coord: Vector2i,
+	site_id: String,
+	site_name: String,
+	site_description: String,
+	hidden_states: Array,
+	entrance_id: String,
+	entrance_name: String,
+	population: int
+) -> void:
+	var tile: RefCounted = tiles.get(coord)
+	if tile == null:
+		return
+	tile.set_site(site_id, site_name, site_description)
+	if tile.terrain == TERRAIN_WATER:
+		tile.terrain = TERRAIN_PLAIN
+	if population >= 0:
+		tile.population = population
+	for state_id in hidden_states:
+		_add_hidden_state(tile, str(state_id))
+	if not entrance_id.is_empty():
+		tile.set_dungeon_entrance(entrance_id, entrance_name)
+
+
+func _add_hidden_state(tile: RefCounted, state_id: String) -> void:
+	if state_id.is_empty() or tile.hidden_states.has(state_id) or tile.states.has(state_id):
+		return
+	tile.hidden_states.append(state_id)
+
+
+func _initial_population_for_tile(tile: RefCounted, distance: int) -> int:
+	var seed := _coord_seed(tile.coord)
+	match tile.terrain:
+		TERRAIN_PLAIN:
+			return 1 + (seed % 3) if distance <= map_radius - 1 else seed % 2
+		TERRAIN_FOREST:
+			return seed % 2
+		TERRAIN_HILL:
+			return 1 if seed % 5 == 0 else 0
+		TERRAIN_RUIN:
+			return 0 if seed % 4 != 0 else 1
+		TERRAIN_HOLY_SITE:
+			return 3
+	return 0
+
+
+func _entrance_id_for_index(index: int) -> String:
+	var ids := [
+		"forgotten_cellar",
+		"plague_catacomb",
+		"sealed_shrine_room",
+		"old_well_tunnel",
+		"graveyard_underpass",
+	]
+	return ids[index % ids.size()]
+
+
+func _entrance_name_for_index(index: int) -> String:
+	var names := [
+		"废弃地下室",
+		"疫病墓窟",
+		"封闭圣室",
+		"旧井暗道",
+		"墓园下层",
+	]
+	return names[index % names.size()]
 
 
 func _configure_camera() -> void:
@@ -370,14 +524,16 @@ func _connect_map_ui() -> void:
 
 func _connect_card_ui() -> void:
 	card_hand_layer.bind_controller(card_controller)
+	if boss_battle_layer != null and boss_battle_layer.has_method("bind_controller"):
+		boss_battle_layer.bind_controller(card_controller)
 	if not card_hand_layer.end_turn_requested.is_connected(end_card_and_map_turn):
 		card_hand_layer.end_turn_requested.connect(end_card_and_map_turn)
 	if not card_hand_layer.map_action_requested.is_connected(_on_map_action_requested):
 		card_hand_layer.map_action_requested.connect(_on_map_action_requested)
 	if not card_controller.effects_applied.is_connected(_on_card_effects_applied):
 		card_controller.effects_applied.connect(_on_card_effects_applied)
-	card_controller.start_demo("sick_village", _get_stage_turn_events(map_state.event_key), map_state.event_key)
-	_sync_card_global_resources_from_map()
+	card_controller.start_demo("life_sprout_village")
+	_sync_map_state_from_card_controller()
 
 
 func _on_primary_map_pressed(world_position: Vector2) -> void:
@@ -443,6 +599,10 @@ func _on_map_action_requested(action_id: String) -> void:
 		_log("最终事件期间无法执行普通行动。")
 		_update_ui()
 		return
+	if card_controller != null and str(card_controller.get_snapshot().get("phase", "")) == "boss" and action_id != "end_turn":
+		_log("关底战期间无法执行地图行动。")
+		_update_ui()
+		return
 	if action_id.begins_with(ITEM_ACTION_PREFIX):
 		_try_use_item(action_id.substr(ITEM_ACTION_PREFIX.length()))
 		return
@@ -463,6 +623,10 @@ func _on_map_action_requested(action_id: String) -> void:
 			_try_rest()
 		"hide":
 			_try_hide()
+		"settle_wounded":
+			_try_settle_wounded()
+		"build_temporary_altar":
+			_try_build_temporary_altar()
 		"clear_enemy_attention":
 			_try_clear_enemy_attention()
 		"handle_pending_event":
@@ -512,6 +676,9 @@ func _on_card_effects_applied(effects: Array, source: Dictionary) -> void:
 		var key := str(effect.get("key", ""))
 		var value := int(effect.get("value", 0))
 		match kind:
+			"experience":
+				map_state.gain_experience(value)
+				changed = true
 			"resource":
 				if CARD_GLOBAL_RESOURCE_KEYS.has(key):
 					map_state.change_global_resource(key, value)
@@ -542,9 +709,20 @@ func _on_card_effects_applied(effects: Array, source: Dictionary) -> void:
 					else:
 						current_tile.add_state(state_id)
 					changed = true
+			"inventory":
+				var item_id := str(effect.get("item", ""))
+				if value >= 0:
+					map_state.add_item(item_id, value)
+				else:
+					map_state.remove_item(item_id, abs(value))
+				changed = true
+			"add_card_to_discard":
+				changed = true
 			"log":
 				_log(_format_card_effect_log_prefix(source) + str(effect.get("text", "")))
 				changed = true
+	_sync_map_state_from_card_controller()
+	changed = true
 	changed = _clear_organization_hunt_if_pressure_safe(source) or changed
 	_sync_sanity_status_from_cards()
 	if changed:
@@ -583,6 +761,8 @@ func _sync_sanity_status_from_cards() -> void:
 
 func _format_card_effect_log_prefix(source: Dictionary) -> String:
 	match str(source.get("type", "")):
+		"map_action", "map_site_investigation":
+			return "地图："
 		"turn_event", "turn_event_handled", "turn_event_converted", "turn_event_exploited":
 			return "事件："
 		"turn_event_route_bonus":
@@ -599,7 +779,19 @@ func _sync_card_global_resources_from_map() -> void:
 	var values := {}
 	for key in CARD_GLOBAL_RESOURCE_KEYS:
 		values[key] = int(map_state.global_resources.get(key, 0))
+	values["life"] = map_state.life
+	values["max_life"] = map_state.max_life
 	card_controller.sync_resources(values)
+
+
+func _sync_map_state_from_card_controller() -> void:
+	if card_controller == null:
+		return
+	var card_resources: Dictionary = card_controller.resources
+	map_state.max_life = max(1, int(card_resources.get("max_life", map_state.max_life)))
+	map_state.life = clamp(int(card_resources.get("life", map_state.life)), 0, map_state.max_life)
+	for key in CARD_GLOBAL_RESOURCE_KEYS:
+		map_state.global_resources[key] = max(0, int(card_resources.get(key, map_state.global_resources.get(key, 0))))
 
 
 func _try_move_to_selected_tile() -> void:
@@ -630,8 +822,48 @@ func _try_investigate_current_tile() -> void:
 	if not pieces.is_empty():
 		map_state.add_item("suspicious_clue")
 		pieces.append("获得：" + _get_item_name("suspicious_clue"))
+	var site_effects := _site_investigation_effects(str(tile.site_id))
+	if not site_effects.is_empty() and card_controller != null:
+		card_controller.apply_external_effects(site_effects, {
+			"type": "map_site_investigation",
+			"id": str(tile.site_id),
+			"name": str(tile.site_name),
+		})
 	_log("调查完成。" if pieces.is_empty() else "调查完成，" + "；".join(pieces) + "。")
 	_update_after_map_change()
+
+
+func _site_investigation_effects(site_id: String) -> Array:
+	match site_id:
+		SITE_SICK_HOUSE:
+			return [
+				{"kind": "progress", "key": "cure_progress", "value": 1},
+				{"kind": "progress", "key": "infection", "value": -1},
+				{"kind": "log", "text": "病屋调查：你分辨出可救者与将恶化者，治疗准备 +1，病势 -1。"},
+			]
+		SITE_OLD_WELL:
+			return [
+				{"kind": "progress", "key": "source_clues", "value": 1},
+				{"kind": "log", "text": "旧井调查：井水里的低语暴露了病源线索。"},
+			]
+		SITE_RUINED_SHRINE:
+			return [
+				{"kind": "progress", "key": "anchor_progress", "value": 1},
+				{"kind": "log", "text": "废祠调查：残存祭痕被重新接上，初生锚点 +1。"},
+			]
+		SITE_GRAVEYARD:
+			return [
+				{"kind": "progress", "key": "source_clues", "value": 1},
+				{"kind": "progress", "key": "infection", "value": 1},
+				{"kind": "add_card_to_discard", "card_id": "pus_blood"},
+				{"kind": "log", "text": "坟地调查：你取得脓血样本，也惊动了地下病灶。"},
+			]
+		SITE_VILLAGE_GATE:
+			return [
+				{"kind": "resource", "key": "faith", "value": 1},
+				{"kind": "log", "text": "村口调查：幸存者确认了你的庇护，信仰 +1。"},
+			]
+	return []
 
 
 func _try_gather_current_tile() -> void:
@@ -689,6 +921,59 @@ func _try_hide() -> void:
 	map_state.change_secrecy_pressure(pressure_delta)
 	tile.add_state("concealed_tracks")
 	_log("隐藏行动完成：追踪压力 %s。" % str(pressure_delta))
+	_update_after_map_change()
+
+
+func _try_settle_wounded() -> void:
+	var result := _evaluate_action("settle_wounded")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法安置伤民。")))
+		_update_ui()
+		return
+	var tile: RefCounted = tiles[map_state.player_coord]
+	map_state.spend_action_points(int(result.get("cost", 1)))
+	tile.explored = true
+	tile.add_state("settled_wounded")
+	map_state.change_global_resource("followers", 1)
+	map_state.change_route_affinity("life", 1)
+	if card_controller != null:
+		card_controller.apply_external_effects([
+			{"kind": "resource", "key": "followers", "value": 1},
+			{"kind": "protect_follower", "value": 1},
+			{"kind": "progress", "key": "cure_progress", "value": 1},
+			{"kind": "log", "text": "病屋里被安置的人把活下来的希望交给了你。"},
+		], {
+			"type": "map_action",
+			"id": "settle_wounded",
+			"name": "安置伤民",
+		})
+	_log("安置伤民：信徒 +1，生命倾向 +1，并保护一名信徒。")
+	_update_after_map_change()
+
+
+func _try_build_temporary_altar() -> void:
+	var result := _evaluate_action("build_temporary_altar")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法建立临时祭坛。")))
+		_update_ui()
+		return
+	var tile: RefCounted = tiles[map_state.player_coord]
+	map_state.spend_action_points(int(result.get("cost", 1)))
+	map_state.change_global_resource("materials", -1)
+	tile.explored = true
+	tile.claim(PLAYER_OWNER)
+	tile.add_state("temporary_altar")
+	if card_controller != null:
+		card_controller.apply_external_effects([
+			{"kind": "resource", "key": "materials", "value": -1},
+			{"kind": "progress", "key": "anchor_progress", "value": 1},
+			{"kind": "log", "text": "废祠的残砖被重新摆成临时祭坛，初生锚点开始发热。"},
+		], {
+			"type": "map_action",
+			"id": "build_temporary_altar",
+			"name": "建临时祭坛",
+		})
+	_log("建临时祭坛：材料 -1，初生锚点 +1。")
 	_update_after_map_change()
 
 
@@ -1310,6 +1595,34 @@ func _evaluate_action(action_id: String) -> Dictionary:
 			if map_state.secrecy_pressure <= 0:
 				enabled = false
 				reason = "暂未被追踪"
+		"settle_wounded":
+			summary = "信徒 +1；治疗 +1；本回合保护信徒"
+			if current_tile == null:
+				enabled = false
+				reason = "当前位置无效"
+			elif not [SITE_SICK_HOUSE, SITE_VILLAGE_GATE].has(str(current_tile.site_id)):
+				enabled = false
+				reason = "需要在病屋或村口安置"
+			elif current_tile.has_state("settled_wounded"):
+				enabled = false
+				reason = "这里已经安置过"
+		"build_temporary_altar":
+			summary = "材料 -1；初生锚点 +1"
+			if current_tile == null:
+				enabled = false
+				reason = "当前位置无效"
+			elif not [SITE_RUINED_SHRINE, SITE_VILLAGE_GATE].has(str(current_tile.site_id)) and not current_tile.has_state("anchor"):
+				enabled = false
+				reason = "需要锚点或废祠"
+			elif current_tile.has_state("temporary_altar"):
+				enabled = false
+				reason = "已有临时祭坛"
+			elif current_tile.has_core_building():
+				enabled = false
+				reason = "已有建筑"
+			elif int(map_state.global_resources.get("materials", 0)) < 1:
+				enabled = false
+				reason = "缺少材料"
 		"clear_enemy_attention":
 			summary = _clear_enemy_attention_summary()
 			if current_tile == null:
@@ -1459,6 +1772,8 @@ func _evaluate_action(action_id: String) -> Dictionary:
 
 
 func _build_actions() -> Array:
+	if card_controller != null and ["boss", "finished"].has(str(card_controller.get_snapshot().get("phase", ""))):
+		return [_evaluate_action("end_turn")]
 	if map_state.stage_node_pending:
 		var node_actions: Array = []
 		for node in map_state.stage_node_options:
@@ -1489,6 +1804,8 @@ func _build_actions() -> Array:
 		_evaluate_action("gather"),
 		_evaluate_action("rest"),
 		_evaluate_action("hide"),
+		_evaluate_action("settle_wounded"),
+		_evaluate_action("build_temporary_altar"),
 		_evaluate_action("clear_enemy_attention"),
 		_evaluate_action("handle_pending_event"),
 		_evaluate_action("convert_pending_event"),
@@ -1553,6 +1870,7 @@ func _build_ui_snapshot() -> Dictionary:
 		"stage_reward_options": _build_stage_reward_snapshot(),
 		"route_affinity": map_state.route_affinity.duplicate(),
 		"route_bonus_threshold_mods": map_state.route_bonus_threshold_mods.duplicate(),
+		"enemy_intents": _build_enemy_intents(),
 		"crisis_preview": _build_crisis_preview(),
 		"pending_event": card_controller.pending_event.duplicate(true) if card_controller != null else {},
 		"pending_event_response_preview": _build_pending_event_response_preview(),
@@ -1581,6 +1899,144 @@ func _build_inventory_snapshot() -> Array:
 		})
 	entries.sort_custom(func(a: Dictionary, b: Dictionary): return str(a.get("name", "")) < str(b.get("name", "")))
 	return entries
+
+
+func _build_enemy_intents() -> Array:
+	var intents: Array = []
+	var card_snapshot := card_controller.get_snapshot() if card_controller != null else {}
+	if str(card_snapshot.get("phase", "")) == "boss":
+		var boss: Dictionary = card_snapshot.get("boss", {})
+		var boss_intent: Dictionary = boss.get("intent", {})
+		intents.append({
+			"title": "%s：%s" % [str(boss.get("name", "溃疡使徒")), str(boss_intent.get("name", "未知意图"))],
+			"timing": "关底战本回合",
+			"body": str(boss_intent.get("text", "")),
+			"consequence": "生命 %s/%s；护层 %s；护盾 %s" % [
+				str(boss.get("life", 0)),
+				str(boss.get("max_life", 0)),
+				str(boss.get("lesion_shield", 0)),
+				str(card_snapshot.get("player_block", 0)),
+			],
+			"responses": "用藤刺击杀，或凑齐线索/锚点后用萌芽祭净化",
+			"severity": "critical",
+		})
+		return intents
+	if str(card_snapshot.get("phase", "")) == "finished":
+		var result: Dictionary = card_snapshot.get("final_result", {})
+		intents.append({
+			"title": "关卡结果：" + str(result.get("name", "")),
+			"timing": "已结束",
+			"body": str(result.get("text", "")),
+			"consequence": "可以查看奖励和牌组变化。",
+			"responses": "选择后续节点或重开关卡",
+			"severity": "normal",
+		})
+		return intents
+	if map_state.stage_node_pending:
+		intents.append({
+			"title": "下一节点选择",
+			"timing": "现在",
+			"body": "当前阶段已经结束，需要选择下一个危机节点。",
+			"consequence": "节点决定下一段倒计时、事件池和成长方向。",
+			"responses": "选择一个节点",
+			"severity": "normal",
+		})
+		return intents
+	if map_state.stage_reward_pending:
+		intents.append({
+			"title": "阶段奖励待领取",
+			"timing": "现在",
+			"body": "最终事件已经处理完毕，需要选择一种阶段成长。",
+			"consequence": "奖励会影响后续路线、资源或卡组。",
+			"responses": "选择一种奖励",
+			"severity": "normal",
+		})
+		return intents
+
+	if map_state.crisis_active and not map_state.stage_resolved:
+		intents.append({
+			"title": "最终事件爆发",
+			"timing": "立即",
+			"body": map_state.event_summary,
+			"consequence": "必须先处理最终事件，其他行动会被锁住。",
+			"responses": _format_available_action_names(_build_actions()),
+			"severity": "critical",
+		})
+	else:
+		intents.append({
+			"title": map_state.stage_node_name,
+			"timing": "%s 回合后" % str(map_state.event_countdown),
+			"body": map_state.event_summary,
+			"consequence": "倒计时归零后进入最终事件，结局取决于治疗、线索、锚点和路线准备。",
+			"responses": "用地图行动和卡牌积累准备",
+			"severity": "warning" if map_state.event_countdown <= 2 else "normal",
+		})
+
+	if card_controller != null and not card_controller.pending_event.is_empty():
+		var event: Dictionary = card_controller.pending_event
+		var response_options: Array[String] = ["放任"]
+		if not event.get("handled_effects", []).is_empty():
+			response_options.append("处理")
+		if not event.get("converted_effects", []).is_empty():
+			response_options.append("转化")
+		if not event.get("exploited_effects", []).is_empty():
+			response_options.append("利用")
+		intents.append({
+			"title": "预兆：" + str(event.get("name", "")),
+			"timing": "本回合",
+			"body": str(event.get("text", "")),
+			"consequence": "放任：" + _summarize_effects(event.get("effects", [])),
+			"responses": " / ".join(response_options),
+			"severity": "warning",
+		})
+
+	var current_tile: RefCounted = tiles.get(map_state.player_coord)
+	if map_state.organization_hunt_pending:
+		intents.append({
+			"title": "追猎锁定",
+			"timing": "立即",
+			"body": "敌对势力已经顺着教团痕迹逼近。",
+			"consequence": "放任会让当前位置进入敌方关注，并损失组织资源。",
+			"responses": _format_available_action_names([
+				_evaluate_action("resolve_organization_hunt_conceal"),
+				_evaluate_action("resolve_organization_hunt_divert"),
+				_evaluate_action("resolve_organization_hunt_ignore"),
+			]),
+			"severity": "critical",
+		})
+	elif map_state.secrecy_pressure >= ORGANIZATION_HUNT_PRESSURE_THRESHOLD - 1 and _has_active_organization():
+		intents.append({
+			"title": "追猎接近",
+			"timing": "下次结算可能触发",
+			"body": "追踪压力接近阈值，敌人正在尝试锁定教团据点和使徒。",
+			"consequence": "压力达到 %s 后会进入追猎预警。" % str(ORGANIZATION_HUNT_PRESSURE_THRESHOLD),
+			"responses": "隐藏、遮蔽教团，或用隐秘路线卡牌压低压力",
+			"severity": "warning",
+		})
+	if current_tile != null and current_tile.has_state("enemy_attention"):
+		intents.append({
+			"title": "地块盯梢",
+			"timing": "回合结算",
+			"body": "当前位置有敌方关注。",
+			"consequence": "停留到回合结束会让追踪压力 +1，离开相邻地块需要 %s AP。" % str(ENEMY_ATTENTION_MOVE_COST),
+			"responses": "清理盯梢，或用可移除敌方关注的卡牌处理",
+			"severity": "warning",
+		})
+	return intents
+
+
+func _format_available_action_names(actions: Array) -> String:
+	var names: Array[String] = []
+	for action in actions:
+		if typeof(action) != TYPE_DICTIONARY:
+			continue
+		var label := str(action.get("label", action.get("id", "")))
+		if bool(action.get("enabled", false)):
+			names.append(label)
+		else:
+			var reason := str(action.get("reason", ""))
+			names.append("%s（%s）" % [label, reason] if not reason.is_empty() else label)
+	return " / ".join(names)
 
 
 func _build_stage_reward_snapshot() -> Array:
@@ -2014,6 +2470,9 @@ func _build_tile_snapshot(tile: RefCounted) -> Dictionary:
 		"coord": tile.coord,
 		"terrain": tile.terrain,
 		"terrain_name": render_layer.get_terrain_name(tile.terrain),
+		"site_id": tile.site_id,
+		"site_name": tile.site_name,
+		"site_description": tile.site_description,
 		"resource_text": resource_text,
 		"population": tile.population,
 		"yields": tile.get_yields(),
@@ -2550,10 +3009,14 @@ func _apply_tile_building_effect(tile: RefCounted, effect: Dictionary) -> void:
 
 
 func _are_neighbors(a: Vector2i, b: Vector2i) -> bool:
+	return _hex_distance(a, b) == 1
+
+
+func _hex_distance(a: Vector2i, b: Vector2i) -> int:
 	var dq := a.x - b.x
 	var dr := a.y - b.y
 	var ds := -a.x - a.y - (-b.x - b.y)
-	return max(abs(dq), abs(dr), abs(ds)) == 1
+	return max(abs(dq), abs(dr), abs(ds))
 
 
 func _defs_by_id(defs: Array) -> Dictionary:

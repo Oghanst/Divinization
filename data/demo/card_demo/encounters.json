@@ -249,5 +249,244 @@
         ]
       }
     ]
+  },
+  {
+    "id": "life_sprout_village",
+    "name": "病村：第一枚新芽",
+    "description": "生命路线与疫病路线争夺病村的解释权。五回合后，溃疡使徒抵达。",
+    "final_event": "溃疡使徒抵达",
+    "turn_limit": 5,
+    "hand_size": 5,
+    "action_points": 3,
+    "initial_resources": {
+      "life": 24,
+      "max_life": 24,
+      "faith": 0,
+      "followers": 0,
+      "will": 3,
+      "materials": 1,
+      "exposure": 0,
+      "sanity": 5
+    },
+    "initial_progress": {
+      "infection": 0,
+      "source_clues": 0,
+      "anchor_progress": 0,
+      "cure_progress": 0,
+      "enemy_charge": 0
+    },
+    "starting_deck": [
+      "vine_thorn",
+      "vine_thorn",
+      "warding_leaf",
+      "warding_leaf",
+      "glimmer_heal",
+      "glimmer_heal",
+      "palpation",
+      "settle_wounded",
+      "sprout_rite",
+      "flesh_compensation"
+    ],
+    "intent_sequence": [
+      "kaun_infection",
+      "kaun_seek",
+      "kaun_break",
+      "kaun_infection",
+      "kaun_charge"
+    ],
+    "turn_events": [
+      {
+        "id": "kaun_infection",
+        "name": "感染",
+        "text": "病灶沿着伤口扩散，村庄的病势上升。",
+        "effects": [
+          {"kind": "progress", "key": "infection", "value": 1},
+          {"kind": "log", "text": "感染结算：病势 +1。"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "infection", "value": -1},
+          {"kind": "progress", "key": "cure_progress", "value": 1},
+          {"kind": "log", "text": "你用照护压下感染，治疗准备推进。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "sanity", "value": -1},
+          {"kind": "log", "text": "你从感染路径里看见病源线索，但理智被拖深。"}
+        ],
+        "exploited_effects": [
+          {"kind": "add_card_to_discard", "card_id": "pus_blood"},
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "log", "text": "你保留脓血样本，换到一条危险线索。"}
+        ]
+      },
+      {
+        "id": "kaun_seek",
+        "name": "寻踪",
+        "text": "疫病背后的意志通过梦话寻找你的神名。",
+        "effects": [
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "寻踪结算：隐秘恶化。"}
+        ],
+        "handled_effects": [
+          {"kind": "resource", "key": "exposure", "value": -1},
+          {"kind": "log", "text": "你遮住病人梦话里的神名，寻踪被压下。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "你顺着寻踪反查病源，但也留下了名号痕迹。"}
+        ],
+        "exploited_effects": [
+          {"kind": "resource", "key": "faith", "value": 1},
+          {"kind": "resource", "key": "exposure", "value": 1},
+          {"kind": "log", "text": "你让梦话传播成信仰，外界也更容易听见。"}
+        ]
+      },
+      {
+        "id": "kaun_break",
+        "name": "破坏",
+        "text": "疫病试图夺走尚未被庇护的人。",
+        "effects": [
+          {"kind": "break_followers_or_infect", "value": 1},
+          {"kind": "log", "text": "破坏结算：失去未保护信徒；若无人可失去，病势上升。"}
+        ],
+        "handled_effects": [
+          {"kind": "protect_follower", "value": 1},
+          {"kind": "resource", "key": "followers", "value": 1},
+          {"kind": "log", "text": "你提前安置伤民，破坏没有夺走他们。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "anchor_progress", "value": 1},
+          {"kind": "resource", "key": "faith", "value": 1},
+          {"kind": "log", "text": "被守住的人开始把庇护称作神迹。"}
+        ]
+      },
+      {
+        "id": "kaun_charge",
+        "name": "蓄力",
+        "text": "溃疡使徒在远处积蓄病灶。",
+        "effects": [
+          {"kind": "progress", "key": "enemy_charge", "value": 1},
+          {"kind": "log", "text": "蓄力结算：关底使徒生命将提高。"}
+        ],
+        "handled_effects": [
+          {"kind": "log", "text": "你打断了病灶蓄力。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "progress", "key": "enemy_charge", "value": 1},
+          {"kind": "log", "text": "你看懂了病灶结构，但蓄力仍然完成。"}
+        ]
+      },
+      {
+        "id": "kaun_whisper",
+        "name": "低语",
+        "text": "旧井和伤口同时说出病源的一部分真名。",
+        "effects": [
+          {"kind": "progress", "key": "infection", "value": 1},
+          {"kind": "log", "text": "你拒绝低语，病势继续上升。"}
+        ],
+        "handled_effects": [
+          {"kind": "progress", "key": "source_clues", "value": 1},
+          {"kind": "resource", "key": "sanity", "value": -1},
+          {"kind": "log", "text": "你接受低语，得到线索，也让理智进入更深处。"}
+        ],
+        "converted_effects": [
+          {"kind": "progress", "key": "anchor_progress", "value": 1},
+          {"kind": "add_card_to_discard", "card_id": "high_fever"},
+          {"kind": "log", "text": "你把低语钉入锚点，高热也跟着进入牌组。"}
+        ]
+      }
+    ],
+    "boss": {
+      "id": "ulcer_apostle",
+      "name": "溃疡使徒",
+      "route": "疫病",
+      "life": 28,
+      "lesion_shield": 2,
+      "intent_loop": ["scratch", "poison_spray", "burst_sore", "foul_well"],
+      "intents": [
+        {
+          "id": "scratch",
+          "name": "抓挠",
+          "text": "造成 6 点生命伤害。"
+        },
+        {
+          "id": "poison_spray",
+          "name": "喷毒",
+          "text": "造成 3 点生命伤害，并加入 1 张脓血。"
+        },
+        {
+          "id": "name_scent",
+          "name": "闻名",
+          "text": "隐秘恶化；下一次抓挠伤害 +3。"
+        },
+        {
+          "id": "foul_well",
+          "name": "污井",
+          "text": "病势 +1。"
+        },
+        {
+          "id": "burst_sore",
+          "name": "爆疮",
+          "text": "若本回合未造成 6 点伤害或移除病灶护层，结算时造成 10 点伤害。"
+        }
+      ]
+    },
+    "boss_outcomes": [
+      {
+        "id": "kill",
+        "name": "击杀溃疡使徒",
+        "text": "你撕碎了伤口的意志，但村庄仍留下余疫。",
+        "rewards": [
+          {"kind": "experience", "value": 3},
+          {"kind": "resource", "key": "faith", "value": 1},
+          {"kind": "resource", "key": "followers", "value": 2},
+          {"kind": "resource", "key": "materials", "value": 3},
+          {"kind": "progress", "key": "cure_progress", "value": 1},
+          {"kind": "map_tile_state", "state": "lingering_plague"},
+          {"kind": "inventory", "item": "ulcer_skin", "value": 1}
+        ],
+        "card_reward_choices": [
+          "root_bind",
+          "revival_bulwark",
+          "sprout_blessing"
+        ]
+      },
+      {
+        "id": "purify",
+        "name": "净化溃疡使徒",
+        "text": "病灶被重新解释为新芽，病村成为被庇护的村庄。",
+        "rewards": [
+          {"kind": "experience", "value": 5},
+          {"kind": "resource", "key": "faith", "value": 2},
+          {"kind": "resource", "key": "followers", "value": 2},
+          {"kind": "resource", "key": "materials", "value": 1},
+          {"kind": "progress", "key": "anchor_progress", "value": 1},
+          {"kind": "map_tile_state", "state": "sprout_village"},
+          {"kind": "map_tile_state", "state": "anchor"},
+          {"kind": "inventory", "item": "sprout_talisman", "value": 1},
+          {"kind": "inventory", "item": "sick_child_name", "value": 1}
+        ],
+        "card_reward_choices": [
+          "sprout_blessing",
+          "newborn_sigil",
+          "revival_bulwark"
+        ]
+      },
+      {
+        "id": "failure",
+        "name": "溃烂地块",
+        "text": "病村被溃疡使徒夺走，污染成为这里新的解释。",
+        "rewards": [
+          {"kind": "experience", "value": 1},
+          {"kind": "progress", "key": "infection", "value": 2},
+          {"kind": "map_tile_state", "state": "ulcerated_land"},
+          {"kind": "map_tile_state", "state": "polluted"},
+          {"kind": "add_card_to_discard", "card_id": "pus_blood"},
+          {"kind": "add_card_to_discard", "card_id": "high_fever"}
+        ]
+      }
+    ]
   }
 ]

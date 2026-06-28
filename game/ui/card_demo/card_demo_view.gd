@@ -243,9 +243,47 @@ func _update_summary(snapshot: Dictionary) -> void:
 func _update_hand(snapshot: Dictionary) -> void:
 	for child in hand_grid.get_children():
 		child.queue_free()
+	var reward_cards: Array = snapshot.get("pending_reward_cards", [])
+	if not reward_cards.is_empty():
+		for card in reward_cards:
+			if typeof(card) == TYPE_DICTIONARY:
+				hand_grid.add_child(_make_reward_card_button(card))
+		return
 	var cards: Array = snapshot.get("hand", [])
 	for card in cards:
 		hand_grid.add_child(_make_card_button(card, bool(snapshot.get("is_finished", false))))
+
+
+func _make_reward_card_button(card: Dictionary) -> Button:
+	var button = Button.new()
+	button.custom_minimum_size = Vector2(250, 178)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.text = "奖励牌三选一\n%s\n[%s]  费用 %s\n\n%s" % [
+		str(card.get("name", "")),
+		str(card.get("type", "")),
+		str(card.get("cost", 0)),
+		str(card.get("text", ""))
+	]
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	var normal = StyleBoxFlat.new()
+	normal.bg_color = CARD_COLOR
+	normal.border_color = ACCENT_COLOR
+	normal.set_border_width_all(1)
+	normal.corner_radius_top_left = 8
+	normal.corner_radius_top_right = 8
+	normal.corner_radius_bottom_left = 8
+	normal.corner_radius_bottom_right = 8
+	normal.content_margin_left = 14
+	normal.content_margin_top = 12
+	normal.content_margin_right = 14
+	normal.content_margin_bottom = 12
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_color_override("font_color", Color(0.95, 0.90, 0.80, 1.0))
+	var choice_index = int(card.get("reward_index", -1))
+	button.pressed.connect(func(): controller.choose_reward_card(choice_index))
+	return button
 
 
 func _make_card_button(card: Dictionary, encounter_finished: bool) -> Button:

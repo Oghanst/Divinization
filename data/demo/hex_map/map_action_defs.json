@@ -25,6 +25,16 @@
     "action_point_cost": 1
   },
   {
+    "id": "settle_wounded",
+    "name": "安置伤民",
+    "action_point_cost": 1
+  },
+  {
+    "id": "build_temporary_altar",
+    "name": "建临时祭坛",
+    "action_point_cost": 1
+  },
+  {
     "id": "clear_enemy_attention",
     "name": "清理盯梢",
     "action_point_cost": 1

@@ -9,13 +9,18 @@ const TERRAIN_HILL := "hill"
 const TERRAIN_WATER := "water"
 const TERRAIN_RUIN := "ruin"
 const TERRAIN_HOLY_SITE := "holy_site"
+const SITE_VILLAGE_GATE := "village_gate"
+const SITE_SICK_HOUSE := "sick_house"
+const SITE_OLD_WELL := "old_well"
+const SITE_RUINED_SHRINE := "ruined_shrine"
+const SITE_GRAVEYARD := "graveyard"
 
 @export var hex_size: float = 52.0
 @export var show_editor_preview := true:
 	set(value):
 		show_editor_preview = value
 		_queue_preview_redraw()
-@export_range(1, 8, 1) var editor_preview_radius := 4:
+@export_range(1, 10, 1) var editor_preview_radius := 6:
 	set(value):
 		editor_preview_radius = value
 		_queue_preview_redraw()
@@ -160,6 +165,7 @@ func _draw_tile(tile: RefCounted) -> void:
 	if tile.coord == selected_coord:
 		draw_polyline(PackedVector2Array(points + [points[0]]), Color(0.95, 0.75, 0.32, 1.0), 4.0)
 	_draw_resource_markers(tile, center)
+	_draw_site_marker(tile, center)
 	if tile.has_building("secret_shrine"):
 		_draw_marker_texture(shrine_texture, center + Vector2(0, 18), 30.0)
 	elif tile.owner == PLAYER_OWNER:
@@ -175,6 +181,41 @@ func _draw_resource_markers(tile: RefCounted, center: Vector2) -> void:
 		var texture: Texture2D = resource_textures.get(tile.resource_ids[i])
 		var offset := Vector2(28 + i * 18, -28 + i * 16)
 		_draw_marker_texture(texture, center + offset, 24.0)
+
+
+func _draw_site_marker(tile: RefCounted, center: Vector2) -> void:
+	var site_id := str(tile.site_id)
+	if site_id.is_empty():
+		return
+	var marker_center := center + Vector2(-28, -28)
+	var outer := Color(0.08, 0.065, 0.04, 0.92)
+	var inner := Color(0.95, 0.74, 0.30, 0.95)
+	match site_id:
+		SITE_SICK_HOUSE:
+			inner = Color(0.74, 0.22, 0.18, 0.96)
+		SITE_OLD_WELL:
+			inner = Color(0.22, 0.63, 0.74, 0.96)
+		SITE_RUINED_SHRINE:
+			inner = Color(0.82, 0.62, 0.28, 0.96)
+		SITE_GRAVEYARD:
+			inner = Color(0.52, 0.50, 0.46, 0.96)
+	draw_circle(marker_center, 13.0, outer)
+	draw_circle(marker_center, 9.0, inner)
+	match site_id:
+		SITE_SICK_HOUSE:
+			draw_line(marker_center + Vector2(-5, 0), marker_center + Vector2(5, 0), outer, 3.0)
+			draw_line(marker_center + Vector2(0, -5), marker_center + Vector2(0, 5), outer, 3.0)
+		SITE_OLD_WELL:
+			draw_arc(marker_center, 5.0, 0.0, TAU, 18, outer, 2.5)
+		SITE_RUINED_SHRINE:
+			draw_line(marker_center + Vector2(-5, 5), marker_center + Vector2(0, -5), outer, 2.5)
+			draw_line(marker_center + Vector2(0, -5), marker_center + Vector2(5, 5), outer, 2.5)
+			draw_line(marker_center + Vector2(-5, 5), marker_center + Vector2(5, 5), outer, 2.5)
+		SITE_GRAVEYARD:
+			draw_line(marker_center + Vector2(0, -6), marker_center + Vector2(0, 6), outer, 2.5)
+			draw_line(marker_center + Vector2(-4, -1), marker_center + Vector2(4, -1), outer, 2.5)
+		SITE_VILLAGE_GATE:
+			draw_arc(marker_center, 5.5, 0.0, TAU, 20, outer, 2.5)
 
 
 func _draw_marker_texture(texture: Texture2D, center: Vector2, size: float) -> void:
