@@ -175,12 +175,17 @@
     "name": "隐藏踪迹",
     "type": "行动",
     "cost": 1,
-    "text": "抹去异常痕迹，降低审判官和修士的注意，并让隐秘回应更容易成形。",
+    "text": "抹去异常痕迹，降低审判官和修士的注意，并清理当前地块的敌方关注。",
     "effects": [
       {
         "kind": "resource",
         "key": "exposure",
         "value": -2
+      },
+      {
+        "kind": "map_tile_state",
+        "state": "enemy_attention",
+        "op": "remove"
       },
       {
         "kind": "progress",
@@ -345,7 +350,7 @@
     "name": "生息赐福",
     "type": "权能",
     "cost": 2,
-    "text": "第一次晋升后获得的生命权能。以温和神迹稳住病人，并把照护转化为见证。",
+    "text": "第一次晋升后获得的生命权能。以温和神迹稳住病人，并用救治安置转移当前地块的敌方关注。",
     "requirements": [
       {
         "scope": "resource",
@@ -364,6 +369,11 @@
         "kind": "resource",
         "key": "faith",
         "value": 1
+      },
+      {
+        "kind": "map_tile_state",
+        "state": "enemy_attention",
+        "op": "remove"
       },
       {
         "kind": "progress",
@@ -392,7 +402,7 @@
     "name": "铸造圣印",
     "type": "权能",
     "cost": 2,
-    "text": "第一次晋升后获得的信仰权能。用材料凝成圣印，让祈祷拥有可依附的形体。",
+    "text": "第一次晋升后获得的信仰权能。用材料凝成圣印，用公开凭证稀释当前地块的敌方关注。",
     "requirements": [
       {
         "scope": "resource",
@@ -411,6 +421,11 @@
         "kind": "resource",
         "key": "followers",
         "value": 1
+      },
+      {
+        "kind": "map_tile_state",
+        "state": "enemy_attention",
+        "op": "remove"
       },
       {
         "kind": "progress",
@@ -434,7 +449,7 @@
     "name": "亡者借息",
     "type": "权能",
     "cost": 2,
-    "text": "第一次晋升后获得的死亡权能。借死者余息压下疫病，但理智会被寒意磨损。",
+    "text": "第一次晋升后获得的死亡权能。借死者余息压下疫病，并收束当前地块的敌方关注。",
     "requirements": [
       {
         "scope": "resource",
@@ -448,6 +463,11 @@
         "kind": "resource",
         "key": "sanity",
         "value": -1
+      },
+      {
+        "kind": "map_tile_state",
+        "state": "enemy_attention",
+        "op": "remove"
       },
       {
         "kind": "progress",
@@ -476,12 +496,17 @@
     "name": "无名帷幕",
     "type": "权能",
     "cost": 1,
-    "text": "第一次晋升后获得的隐秘权能。让一个异常从所有人的记忆边缘滑落，并留下更深的线索。",
+    "text": "第一次晋升后获得的隐秘权能。让异常从记忆边缘滑落，并清理当前地块的敌方关注。",
     "effects": [
       {
         "kind": "resource",
         "key": "exposure",
         "value": -2
+      },
+      {
+        "kind": "map_tile_state",
+        "state": "enemy_attention",
+        "op": "remove"
       },
       {
         "kind": "progress",
@@ -510,7 +535,7 @@
     "name": "生息赐福·复苏",
     "type": "权能",
     "cost": 2,
-    "text": "深化后的生命权能。把一次救治变成可传播的复苏见证。",
+    "text": "深化后的生命权能。把一次救治变成可传播的复苏见证，并安置当前地块的敌方关注。",
     "requirements": [
       {
         "scope": "resource",
@@ -529,6 +554,11 @@
         "kind": "resource",
         "key": "faith",
         "value": 2
+      },
+      {
+        "kind": "map_tile_state",
+        "state": "enemy_attention",
+        "op": "remove"
       },
       {
         "kind": "progress",
@@ -562,7 +592,7 @@
     "name": "铸造圣印·群祷",
     "type": "权能",
     "cost": 2,
-    "text": "深化后的信仰权能。圣印不再只是锚点，而能组织第一批稳定祈祷。",
+    "text": "深化后的信仰权能。圣印不再只是锚点，而能组织群祷稀释当前地块的敌方关注。",
     "requirements": [
       {
         "scope": "resource",
@@ -581,6 +611,11 @@
         "kind": "resource",
         "key": "followers",
         "value": 2
+      },
+      {
+        "kind": "map_tile_state",
+        "state": "enemy_attention",
+        "op": "remove"
       },
       {
         "kind": "progress",
@@ -604,7 +639,7 @@
     "name": "亡者借息·寒潮",
     "type": "权能",
     "cost": 2,
-    "text": "深化后的死亡权能。借一阵死寒压住疫病，也逼出病源残响。",
+    "text": "深化后的死亡权能。借一阵死寒压住疫病，也切断当前地块的敌方关注。",
     "requirements": [
       {
         "scope": "resource",
@@ -618,6 +653,11 @@
         "kind": "resource",
         "key": "sanity",
         "value": -1
+      },
+      {
+        "kind": "map_tile_state",
+        "state": "enemy_attention",
+        "op": "remove"
       },
       {
         "kind": "progress",
@@ -651,12 +691,17 @@
     "name": "无名帷幕·匿名",
     "type": "权能",
     "cost": 1,
-    "text": "深化后的隐秘权能。遮住异常，也遮住注视异常的人。",
+    "text": "深化后的隐秘权能。遮住异常，也遮住注视异常的人，并清理当前地块的敌方关注。",
     "effects": [
       {
         "kind": "resource",
         "key": "exposure",
         "value": -3
+      },
+      {
+        "kind": "map_tile_state",
+        "state": "enemy_attention",
+        "op": "remove"
       },
       {
         "kind": "progress",

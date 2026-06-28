@@ -161,6 +161,8 @@ func _format_crisis_preview(snapshot: Dictionary) -> String:
 		elif bool(snapshot.get("stage_reward_claimed", false)):
 			reward_lines.append("奖励已领取")
 		return "\n".join(reward_lines)
+	if bool(snapshot.get("organization_hunt_pending", false)):
+		return "追猎预警\n敌对势力正在逼近教团。据点与使徒会暴露你的位置。\n选择遮蔽追猎、误导追猎，或放任搜查。"
 	var previews: Array = snapshot.get("crisis_preview", [])
 	var lines: Array[String] = []
 	if not previews.is_empty():

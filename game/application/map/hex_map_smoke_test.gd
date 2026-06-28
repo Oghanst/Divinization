@@ -423,14 +423,98 @@ func _ready() -> void:
 	_assert(map.map_state.secrecy_pressure == 2, "life organization conceal lowers pressure")
 	_assert(int(map.card_controller.progress.get("cure_progress", 0)) == cure_before_conceal + 1, "life organization conceal advances cure")
 	_assert(int(map.map_state.route_affinity.get("life", 0)) == life_before_conceal + 1, "life organization conceal strengthens life route")
+	map.map_state.crisis_active = false
+	map.map_state.stage_resolved = false
+	map.map_state.event_countdown = 8
+	map.map_state.event_summary = map._format_stage_countdown_summary()
 	map.map_state.secrecy_pressure = 5
+	map.map_state.organization_hunt_pending = false
 	var apostles_before_hunt := int(map.map_state.global_resources.get("apostles", 0))
-	var pressure_before_hunt: int = map.map_state.secrecy_pressure
 	var hunt_tile: RefCounted = map.tiles[map.map_state.player_coord]
 	map._on_map_action_requested("end_turn")
-	_assert(int(map.map_state.global_resources.get("apostles", 0)) == apostles_before_hunt - 1, "organization hunt removes an apostle")
-	_assert(map.map_state.secrecy_pressure == max(0, pressure_before_hunt - 2), "organization hunt lowers pressure after raid")
-	_assert(hunt_tile.has_state("enemy_attention"), "organization hunt marks enemy attention")
+	_assert(map.map_state.organization_hunt_pending, "organization hunt creates a warning before raid")
+	_assert(int(map.map_state.global_resources.get("apostles", 0)) == apostles_before_hunt, "organization hunt warning does not remove an apostle immediately")
+	map.card_controller.hand = ["hide_tracks"]
+	map.card_controller.resources["action_points"] = 3
+	map.card_controller.play_card(0)
+	_assert(not map.map_state.organization_hunt_pending, "secrecy card clears hunt warning when pressure drops below threshold")
+	_assert(map.map_state.secrecy_pressure < 5, "secrecy card lowers pressure below hunt threshold")
+	_assert(int(map.map_state.global_resources.get("apostles", 0)) == apostles_before_hunt, "secrecy card keeps apostles safe from hunt")
+	map.map_state.secrecy_pressure = 5
+	map.map_state.organization_hunt_pending = false
+	var pressure_before_hunt: int = map.map_state.secrecy_pressure
+	var cure_before_hunt_conceal := int(map.card_controller.progress.get("cure_progress", 0))
+	var life_before_hunt_conceal := int(map.map_state.route_affinity.get("life", 0))
+	map._on_map_action_requested("end_turn")
+	_assert(_action_enabled(map._build_actions(), "resolve_organization_hunt_conceal"), "hunt warning enables conceal response")
+	map._on_map_action_requested("resolve_organization_hunt_conceal")
+	_assert(not map.map_state.organization_hunt_pending, "conceal response clears hunt warning")
+	_assert(map.map_state.secrecy_pressure == max(0, pressure_before_hunt - 2), "conceal response lowers pressure")
+	_assert(int(map.map_state.global_resources.get("apostles", 0)) == apostles_before_hunt, "conceal response keeps apostles safe")
+	_assert(int(map.card_controller.progress.get("cure_progress", 0)) == cure_before_hunt_conceal + 1, "hunt conceal uses route response effects")
+	_assert(int(map.map_state.route_affinity.get("life", 0)) == life_before_hunt_conceal + 1, "hunt conceal strengthens route")
+	map.map_state.secrecy_pressure = 5
+	map.map_state.organization_hunt_pending = false
+	map.map_state.global_resources["apostles"] = max(1, int(map.map_state.global_resources.get("apostles", 0)))
+	var apostles_before_divert := int(map.map_state.global_resources.get("apostles", 0))
+	var clues_before_divert := int(map.map_state.inventory.get("suspicious_clue", 0))
+	map._on_map_action_requested("end_turn")
+	_assert(map.map_state.organization_hunt_pending, "organization hunt can warn again")
+	_assert(_action_enabled(map._build_actions(), "resolve_organization_hunt_divert"), "hunt warning enables divert response with apostle")
+	map._on_map_action_requested("resolve_organization_hunt_divert")
+	_assert(not map.map_state.organization_hunt_pending, "divert response clears hunt warning")
+	_assert(int(map.map_state.global_resources.get("apostles", 0)) == apostles_before_divert - 1, "divert response spends an apostle")
+	_assert(map.map_state.secrecy_pressure == 1, "divert response greatly lowers pressure")
+	_assert(int(map.map_state.inventory.get("suspicious_clue", 0)) == clues_before_divert + 1, "divert response gains reverse clue")
+	map.map_state.secrecy_pressure = 5
+	map.map_state.organization_hunt_pending = false
+	map.map_state.global_resources["apostles"] = max(1, int(map.map_state.global_resources.get("apostles", 0)))
+	var apostles_before_ignore := int(map.map_state.global_resources.get("apostles", 0))
+	map._on_map_action_requested("end_turn")
+	_assert(_action_enabled(map._build_actions(), "resolve_organization_hunt_ignore"), "hunt warning enables ignore response")
+	map._on_map_action_requested("resolve_organization_hunt_ignore")
+	_assert(not map.map_state.organization_hunt_pending, "ignore response clears hunt warning")
+	_assert(int(map.map_state.global_resources.get("apostles", 0)) == apostles_before_ignore - 1, "ignore response applies raid loss")
+	_assert(map.map_state.secrecy_pressure == 3, "ignore response applies raid pressure relief")
+	_assert(hunt_tile.has_state("enemy_attention"), "ignore response marks enemy attention")
+	var pressure_before_card_attention_cleanup: int = map.map_state.secrecy_pressure
+	map.card_controller.hand = ["hide_tracks"]
+	map.card_controller.resources["action_points"] = 3
+	map.card_controller.play_card(0)
+	_assert(not hunt_tile.has_state("enemy_attention"), "secrecy card removes enemy attention from current tile")
+	_assert(map.map_state.secrecy_pressure < pressure_before_card_attention_cleanup, "secrecy card lowers pressure while cleaning attention")
+	hunt_tile.add_state("enemy_attention")
+	var cure_before_life_attention_card := int(map.card_controller.progress.get("cure_progress", 0))
+	var life_before_attention_card := int(map.map_state.route_affinity.get("life", 0))
+	map.card_controller.hand = ["ascend_life_benediction"]
+	map.card_controller.resources["action_points"] = 3
+	map.card_controller.resources["will"] = 1
+	map.card_controller.play_card(0)
+	_assert(not hunt_tile.has_state("enemy_attention"), "life route power also removes enemy attention")
+	_assert(int(map.card_controller.progress.get("cure_progress", 0)) == cure_before_life_attention_card + 2, "life route power still advances cure")
+	_assert(int(map.map_state.route_affinity.get("life", 0)) == life_before_attention_card + 1, "life route power still strengthens route")
+	hunt_tile.add_state("enemy_attention")
+	var attention_escape_coord := _find_passable_neighbor(map, map.map_state.player_coord)
+	map._select_tile(attention_escape_coord)
+	map.map_state.action_points = 1
+	var watched_move: Dictionary = map._evaluate_action("move")
+	_assert(int(watched_move.get("cost", 0)) == 2, "enemy attention makes leaving cost 2")
+	_assert(not bool(watched_move.get("enabled", true)), "enemy attention blocks leaving with only 1 action point")
+	map.map_state.action_points = 3
+	map._select_tile(map.map_state.player_coord)
+	var pressure_before_attention_turn: int = map.map_state.secrecy_pressure
+	map._on_map_action_requested("end_turn")
+	_assert(map.map_state.secrecy_pressure == pressure_before_attention_turn + 1, "enemy attention raises pressure when ending turn there")
+	_assert(_action_enabled(map._build_actions(), "clear_enemy_attention"), "enemy attention enables cleanup action")
+	_assert(_action_summary_contains(map._build_actions(), "clear_enemy_attention", "治疗 +1"), "cleanup preview shows life route reward")
+	_assert(_action_summary_contains(map._build_actions(), "clear_enemy_attention", "生命倾向 +1"), "cleanup preview shows route affinity reward")
+	var cure_before_attention_cleanup := int(map.card_controller.progress.get("cure_progress", 0))
+	var life_before_attention_cleanup := int(map.map_state.route_affinity.get("life", 0))
+	map._on_map_action_requested("clear_enemy_attention")
+	_assert(not hunt_tile.has_state("enemy_attention"), "cleanup removes enemy attention")
+	_assert(map.map_state.secrecy_pressure == pressure_before_attention_turn, "cleanup lowers pressure after attention turn")
+	_assert(int(map.card_controller.progress.get("cure_progress", 0)) == cure_before_attention_cleanup + 1, "life cleanup advances cure")
+	_assert(int(map.map_state.route_affinity.get("life", 0)) == life_before_attention_cleanup + 1, "life cleanup strengthens route")
 
 	print("HEX_MAP_SMOKE_OK")
 	get_tree().quit()
@@ -461,6 +545,13 @@ func _action_exists(actions: Array, action_id: String) -> bool:
 	for action in actions:
 		if typeof(action) == TYPE_DICTIONARY and str(action.get("id", "")) == action_id:
 			return true
+	return false
+
+
+func _action_summary_contains(actions: Array, action_id: String, text: String) -> bool:
+	for action in actions:
+		if typeof(action) == TYPE_DICTIONARY and str(action.get("id", "")) == action_id:
+			return str(action.get("summary", "")).contains(text)
 	return false
 
 

@@ -17,6 +17,7 @@ var inventory: Dictionary = {}
 var sanity_status: String = "稳定"
 var secrecy_status: String = "隐匿"
 var secrecy_pressure: int = 2
+var organization_hunt_pending: bool = false
 var crisis_active: bool = false
 var stage_resolved: bool = false
 var stage_result_id: String = ""

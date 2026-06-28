@@ -47,6 +47,8 @@ const FIRST_ASCENSION_ROUTE_CARD_IDS := {
 }
 const ORGANIZATION_HUNT_PRESSURE_THRESHOLD := 5
 const ORGANIZATION_HUNT_PRESSURE_RELIEF := -2
+const ORGANIZATION_HUNT_DIVERT_RELIEF := -4
+const ENEMY_ATTENTION_MOVE_COST := 2
 const APOSTLE_DISPATCH_EFFECTS := {
 	"life": [
 		{"scope": "inventory", "item": "medicinal_herb_bundle", "delta": 1},
@@ -102,6 +104,34 @@ const ORGANIZATION_CONCEAL_EFFECTS := {
 		{"scope": "card_progress", "key": "source_clues", "delta": 1},
 		{"scope": "route_affinity", "route": "secret", "delta": 1},
 		{"scope": "log", "text": "隐秘教团抹去几处关键痕迹，并从追踪者那里反推出异常线索。"},
+	],
+}
+const ENEMY_ATTENTION_CLEAR_EFFECTS := {
+	"life": [
+		{"scope": "secrecy_pressure", "delta": -1},
+		{"scope": "card_progress", "key": "cure_progress", "delta": 1},
+		{"scope": "route_affinity", "route": "life", "delta": 1},
+		{"scope": "log", "text": "生命路线清理盯梢：你安置了被盘问的人，治疗见证反而更清晰。"},
+	],
+	"faith": [
+		{"scope": "secrecy_pressure", "delta": -1},
+		{"scope": "global_resource", "key": "faith", "delta": 1},
+		{"scope": "route_affinity", "route": "faith", "delta": 1},
+		{"scope": "log", "text": "信仰路线清理盯梢：公开祈祷稀释了异常传闻，信仰重新聚拢。"},
+	],
+	"death": [
+		{"scope": "secrecy_pressure", "delta": -1},
+		{"scope": "inventory", "item": "plague_residue", "delta": 1},
+		{"scope": "card_progress", "key": "infection", "delta": -1},
+		{"scope": "route_affinity", "route": "death", "delta": 1},
+		{"scope": "log", "text": "死亡路线清理盯梢：尸证和病灶被收束，只留下可用的疫病残材。"},
+	],
+	"secret": [
+		{"scope": "secrecy_pressure", "delta": -1},
+		{"scope": "inventory", "item": "suspicious_clue", "delta": 1},
+		{"scope": "card_progress", "key": "source_clues", "delta": 1},
+		{"scope": "route_affinity", "route": "secret", "delta": 1},
+		{"scope": "log", "text": "隐秘路线清理盯梢：敌人的观察点被反向利用，留下异常线索。"},
 	],
 }
 
@@ -163,6 +193,7 @@ func end_turn() -> void:
 	if faith_gain > 0:
 		map_state.change_global_resource("faith", faith_gain)
 		_log("回合结算：信仰 +%s。" % str(faith_gain))
+	_resolve_enemy_attention_pressure()
 	_resolve_organization_hunt()
 	map_state.turn += 1
 	map_state.reset_action_points()
@@ -179,9 +210,23 @@ func end_card_and_map_turn() -> void:
 
 func _resolve_organization_hunt() -> void:
 	if map_state.secrecy_pressure < ORGANIZATION_HUNT_PRESSURE_THRESHOLD:
+		if map_state.organization_hunt_pending:
+			map_state.organization_hunt_pending = false
+			_log("追猎预警解除：追踪压力已经降到敌人难以锁定的程度。")
 		return
-	if int(map_state.global_resources.get("cult_cells", 0)) <= 0 and int(map_state.global_resources.get("apostles", 0)) <= 0:
+	if not _has_active_organization():
+		if map_state.organization_hunt_pending:
+			map_state.organization_hunt_pending = false
 		return
+	if not map_state.organization_hunt_pending:
+		map_state.organization_hunt_pending = true
+		_log("追猎预警：敌对势力开始逼近教团。下一轮必须遮蔽、误导或放任搜查。")
+		return
+	_apply_organization_hunt_penalty()
+
+
+func _apply_organization_hunt_penalty() -> void:
+	map_state.organization_hunt_pending = false
 	var hunted_tile := _get_organization_attention_tile()
 	if hunted_tile != null:
 		hunted_tile.add_state("enemy_attention")
@@ -194,6 +239,18 @@ func _resolve_organization_hunt() -> void:
 	else:
 		_log("追猎搜查：敌对势力逼近教团据点，当前地块留下敌人注意。")
 	map_state.change_secrecy_pressure(ORGANIZATION_HUNT_PRESSURE_RELIEF)
+
+
+func _has_active_organization() -> bool:
+	return int(map_state.global_resources.get("cult_cells", 0)) > 0 or int(map_state.global_resources.get("apostles", 0)) > 0
+
+
+func _resolve_enemy_attention_pressure() -> void:
+	var current_tile: RefCounted = tiles.get(map_state.player_coord)
+	if current_tile == null or not current_tile.has_state("enemy_attention"):
+		return
+	map_state.change_secrecy_pressure(1)
+	_log("敌方关注：你在被盯上的地块停留，追踪压力 +1。")
 
 
 func _get_organization_attention_tile() -> RefCounted:
@@ -406,6 +463,8 @@ func _on_map_action_requested(action_id: String) -> void:
 			_try_rest()
 		"hide":
 			_try_hide()
+		"clear_enemy_attention":
+			_try_clear_enemy_attention()
 		"handle_pending_event":
 			_try_respond_pending_event("handled", action_id)
 		"convert_pending_event":
@@ -424,6 +483,12 @@ func _on_map_action_requested(action_id: String) -> void:
 			_try_dispatch_apostle()
 		"conceal_organization":
 			_try_conceal_organization()
+		"resolve_organization_hunt_conceal":
+			_try_conceal_organization_hunt()
+		"resolve_organization_hunt_divert":
+			_try_divert_organization_hunt()
+		"resolve_organization_hunt_ignore":
+			_try_ignore_organization_hunt()
 		"enter_encounter":
 			_try_enter_encounter()
 		"end_turn":
@@ -480,9 +545,24 @@ func _on_card_effects_applied(effects: Array, source: Dictionary) -> void:
 			"log":
 				_log(_format_card_effect_log_prefix(source) + str(effect.get("text", "")))
 				changed = true
+	changed = _clear_organization_hunt_if_pressure_safe(source) or changed
 	_sync_sanity_status_from_cards()
 	if changed:
 		_update_after_map_change()
+
+
+func _clear_organization_hunt_if_pressure_safe(source: Dictionary) -> bool:
+	if not map_state.organization_hunt_pending:
+		return false
+	if map_state.secrecy_pressure >= ORGANIZATION_HUNT_PRESSURE_THRESHOLD:
+		return false
+	map_state.organization_hunt_pending = false
+	var source_name := str(source.get("name", ""))
+	if source_name.is_empty():
+		_log("追猎预警解除：追踪压力已经低于敌人锁定组织的范围。")
+	else:
+		_log("追猎预警解除：《%s》抹去了足够多的痕迹，敌人暂时失去目标。" % source_name)
+	return true
 
 
 func _sync_sanity_status_from_cards() -> void:
@@ -612,6 +692,26 @@ func _try_hide() -> void:
 	_update_after_map_change()
 
 
+func _try_clear_enemy_attention() -> void:
+	var result := _evaluate_action("clear_enemy_attention")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法清理盯梢。")))
+		_update_ui()
+		return
+	var tile: RefCounted = tiles[map_state.player_coord]
+	map_state.spend_action_points(int(result.get("cost", 1)))
+	tile.remove_state("enemy_attention")
+	tile.add_state("concealed_tracks")
+	if map_state.ascension_tier >= 1:
+		_apply_stage_reward_effects(_get_enemy_attention_clear_effects(map_state.ascension_route))
+		_log("清理盯梢：%s路线将敌方关注转化为自己的准备。" % _route_short_name(map_state.ascension_route))
+	else:
+		map_state.change_secrecy_pressure(-1)
+		map_state.add_item("suspicious_clue", 1)
+		_log("清理盯梢：敌人的观察点被反向利用，追踪压力 -1，获得异常线索。")
+	_update_after_map_change()
+
+
 func _try_respond_pending_event(mode: String, action_id: String) -> void:
 	var result := _evaluate_action(action_id)
 	if not bool(result.get("enabled", false)):
@@ -723,6 +823,45 @@ func _try_conceal_organization() -> void:
 	_update_after_map_change()
 
 
+func _try_conceal_organization_hunt() -> void:
+	var result := _evaluate_action("resolve_organization_hunt_conceal")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法遮蔽追猎。")))
+		_update_ui()
+		return
+	map_state.spend_action_points(int(result.get("cost", 1)))
+	map_state.organization_hunt_pending = false
+	_apply_stage_reward_effects(_get_organization_conceal_effects(map_state.ascension_route))
+	_log("追猎回应：%s路线的组织遮住关键痕迹，本次搜查被压下。" % _route_short_name(map_state.ascension_route))
+	_update_after_map_change()
+
+
+func _try_divert_organization_hunt() -> void:
+	var result := _evaluate_action("resolve_organization_hunt_divert")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法误导追猎。")))
+		_update_ui()
+		return
+	map_state.spend_action_points(int(result.get("cost", 0)))
+	map_state.organization_hunt_pending = false
+	map_state.change_global_resource("apostles", -1)
+	map_state.change_secrecy_pressure(ORGANIZATION_HUNT_DIVERT_RELIEF)
+	map_state.add_item("suspicious_clue", 1)
+	_log("追猎回应：一名使徒主动暴露假线索引开敌人，你获得一份反向线索。")
+	_update_after_map_change()
+
+
+func _try_ignore_organization_hunt() -> void:
+	var result := _evaluate_action("resolve_organization_hunt_ignore")
+	if not bool(result.get("enabled", false)):
+		_log(str(result.get("reason", "无法放任搜查。")))
+		_update_ui()
+		return
+	map_state.spend_action_points(int(result.get("cost", 0)))
+	_apply_organization_hunt_penalty()
+	_update_after_map_change()
+
+
 func _get_apostle_dispatch_effects(route_id: String) -> Array:
 	var effects: Array = APOSTLE_DISPATCH_EFFECTS.get(route_id, APOSTLE_DISPATCH_EFFECTS.get("secret", []))
 	return effects.duplicate(true)
@@ -731,6 +870,17 @@ func _get_apostle_dispatch_effects(route_id: String) -> Array:
 func _get_organization_conceal_effects(route_id: String) -> Array:
 	var effects: Array = ORGANIZATION_CONCEAL_EFFECTS.get(route_id, ORGANIZATION_CONCEAL_EFFECTS.get("secret", []))
 	return effects.duplicate(true)
+
+
+func _get_enemy_attention_clear_effects(route_id: String) -> Array:
+	var effects: Array = ENEMY_ATTENTION_CLEAR_EFFECTS.get(route_id, ENEMY_ATTENTION_CLEAR_EFFECTS.get("secret", []))
+	return effects.duplicate(true)
+
+
+func _clear_enemy_attention_summary() -> String:
+	if map_state.ascension_tier >= 1:
+		return _summarize_item_effects(_get_enemy_attention_clear_effects(map_state.ascension_route))
+	return "追踪压力 -1；%s +1" % _get_item_name("suspicious_clue")
 
 
 func _try_enter_encounter() -> void:
@@ -1110,6 +1260,9 @@ func _evaluate_action(action_id: String) -> Dictionary:
 	var label := str(def.get("name", action_id))
 	var selected_tile: RefCounted = get_selected_tile()
 	var current_tile: RefCounted = tiles.get(map_state.player_coord)
+	if action_id == "move" and current_tile != null and current_tile.has_state("enemy_attention") and map_state.selected_coord != map_state.player_coord:
+		cost = max(cost, ENEMY_ATTENTION_MOVE_COST)
+	var summary := ""
 	var reason := ""
 	var enabled := true
 	if cost > 0 and not map_state.can_spend_action_points(cost):
@@ -1157,6 +1310,14 @@ func _evaluate_action(action_id: String) -> Dictionary:
 			if map_state.secrecy_pressure <= 0:
 				enabled = false
 				reason = "暂未被追踪"
+		"clear_enemy_attention":
+			summary = _clear_enemy_attention_summary()
+			if current_tile == null:
+				enabled = false
+				reason = "当前位置无效"
+			elif not current_tile.has_state("enemy_attention"):
+				enabled = false
+				reason = "当前地块没有敌方关注"
 		"handle_pending_event":
 			if card_controller == null or not card_controller.has_pending_event():
 				enabled = false
@@ -1259,6 +1420,24 @@ func _evaluate_action(action_id: String) -> Dictionary:
 			elif map_state.secrecy_pressure <= 0:
 				enabled = false
 				reason = "暂未被追踪"
+		"resolve_organization_hunt_conceal":
+			if not map_state.organization_hunt_pending:
+				enabled = false
+				reason = "没有追猎预警"
+			elif not _has_active_organization():
+				enabled = false
+				reason = "没有可遮蔽的组织"
+		"resolve_organization_hunt_divert":
+			if not map_state.organization_hunt_pending:
+				enabled = false
+				reason = "没有追猎预警"
+			elif int(map_state.global_resources.get("apostles", 0)) <= 0:
+				enabled = false
+				reason = "需要使徒误导追猎"
+		"resolve_organization_hunt_ignore":
+			if not map_state.organization_hunt_pending:
+				enabled = false
+				reason = "没有追猎预警"
 		"enter_encounter":
 			if current_tile == null:
 				enabled = false
@@ -1275,6 +1454,7 @@ func _evaluate_action(action_id: String) -> Dictionary:
 		"enabled": enabled,
 		"reason": reason,
 		"cost": cost,
+		"summary": summary,
 	}
 
 
@@ -1297,12 +1477,19 @@ func _build_actions() -> Array:
 			if typeof(action) == TYPE_DICTIONARY:
 				crisis_actions.append(_evaluate_crisis_action(str(action.get("id", ""))))
 		return crisis_actions
+	if map_state.organization_hunt_pending:
+		return [
+			_evaluate_action("resolve_organization_hunt_conceal"),
+			_evaluate_action("resolve_organization_hunt_divert"),
+			_evaluate_action("resolve_organization_hunt_ignore"),
+		]
 	var actions := [
 		_evaluate_action("move"),
 		_evaluate_action("investigate"),
 		_evaluate_action("gather"),
 		_evaluate_action("rest"),
 		_evaluate_action("hide"),
+		_evaluate_action("clear_enemy_attention"),
 		_evaluate_action("handle_pending_event"),
 		_evaluate_action("convert_pending_event"),
 		_evaluate_action("exploit_pending_event"),
@@ -1347,6 +1534,8 @@ func _build_ui_snapshot() -> Dictionary:
 		"ascension": _build_ascension_snapshot(),
 		"sanity_status": map_state.sanity_status,
 		"secrecy_status": "%s（压力 %s）" % [map_state.secrecy_status, str(map_state.secrecy_pressure)],
+		"organization_hunt_pending": map_state.organization_hunt_pending,
+		"organization_hunt_threshold": ORGANIZATION_HUNT_PRESSURE_THRESHOLD,
 		"player_coord": map_state.player_coord,
 		"global_resources": map_state.global_resources.duplicate(),
 		"inventory": _build_inventory_snapshot(),

@@ -32,7 +32,7 @@
   {
     "id": "enemy_attention",
     "name": "敌方关注",
-    "description": "敌对势力已经注意到这里。"
+    "description": "敌对势力已经注意到这里，在此停留会提高追踪压力，撤离也更费行动。"
   },
   {
     "id": "anchor",

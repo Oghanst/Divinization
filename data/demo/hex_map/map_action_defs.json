@@ -25,6 +25,11 @@
     "action_point_cost": 1
   },
   {
+    "id": "clear_enemy_attention",
+    "name": "清理盯梢",
+    "action_point_cost": 1
+  },
+  {
     "id": "handle_pending_event",
     "name": "处理预兆",
     "action_point_cost": 1
@@ -68,6 +73,21 @@
     "id": "conceal_organization",
     "name": "遮蔽教团",
     "action_point_cost": 1
+  },
+  {
+    "id": "resolve_organization_hunt_conceal",
+    "name": "遮蔽追猎",
+    "action_point_cost": 1
+  },
+  {
+    "id": "resolve_organization_hunt_divert",
+    "name": "误导追猎",
+    "action_point_cost": 0
+  },
+  {
+    "id": "resolve_organization_hunt_ignore",
+    "name": "放任搜查",
+    "action_point_cost": 0
   },
   {
     "id": "enter_encounter",
